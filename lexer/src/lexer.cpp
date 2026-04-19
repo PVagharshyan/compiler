@@ -11,30 +11,55 @@ static const std::unordered_map<std::string, TokenType> keywords = {
     {"for", TokenType::For}
 };
 
-// -------------------- OPERATORS (EXTENSIBLE) --------------------
-static const std::unordered_map<std::string, TokenType> operators = {
-    {"+", TokenType::Operator},
-    {"-", TokenType::Operator},
-    {"*", TokenType::Operator},
-    {"/", TokenType::Operator},
+// -------------------- OPERATOR AUTOMATON --------------------
+lexer::OpNode* lexer::opRoot = nullptr;
 
-    {"=", TokenType::Assign},
-    {"==", TokenType::Operator},
-    {"!=", TokenType::Operator},
+// add operator into trie
+void lexer::addOperator(const std::string& op, TokenType type) {
+    OpNode* cur = opRoot;
 
-    {"<", TokenType::Operator},
-    {"<=", TokenType::Operator},
-    {">", TokenType::Operator},
-    {">=", TokenType::Operator},
+    for (char c : op) {
+        if (!cur->next[c])
+            cur->next[c] = new OpNode();
 
-    // you can extend freely:
-    // {"&&", TokenType::Operator},
-    // {"||", TokenType::Operator},
-    // {"<<=", TokenType::Operator},
-};
+        cur = cur->next[c];
+    }
+
+    cur->token = type;
+}
+
+// build automaton once
+void lexer::initOperatorAutomaton() {
+    if (opRoot) return;
+
+    opRoot = new OpNode();
+
+    // ---- define operators here ONLY ----
+    addOperator("+", TokenType::Operator);
+    addOperator("-", TokenType::Operator);
+    addOperator("*", TokenType::Operator);
+    addOperator("/", TokenType::Operator);
+
+    addOperator("=", TokenType::Assign);
+    addOperator("==", TokenType::Operator);
+    addOperator("!=", TokenType::Operator);
+
+    addOperator("<", TokenType::Operator);
+    addOperator("<=", TokenType::Operator);
+    addOperator(">", TokenType::Operator);
+    addOperator(">=", TokenType::Operator);
+
+    // extend freely:
+    // addOperator("&&", TokenType::Operator);
+    // addOperator("||", TokenType::Operator);
+    // addOperator("<<", TokenType::Operator);
+    // addOperator("<<=", TokenType::Operator);
+}
 
 // -------------------- CTOR --------------------
-lexer::lexer(const std::string& s) : src(s) {}
+lexer::lexer(const std::string& s) : src(s) {
+    initOperatorAutomaton();
+}
 
 // -------------------- BASIC OPS --------------------
 char lexer::peek() const {
@@ -92,11 +117,11 @@ Token lexer::readNumber() {
     return {TokenType::Number, n};
 }
 
-// -------------------- OPERATOR / SYMBOL --------------------
+// -------------------- OPERATOR / SYMBOL (DFA) --------------------
 Token lexer::readOperatorOrSymbol() {
     char c = peek();
 
-    // ---- single char symbols (keep separate) ----
+    // ---- fixed single-char symbols ----
     switch (c) {
         case '{': get(); return {TokenType::LBrace, "{"};
         case '}': get(); return {TokenType::RBrace, "}"};
@@ -105,27 +130,34 @@ Token lexer::readOperatorOrSymbol() {
         case ';': get(); return {TokenType::Semicolon, ";"};
     }
 
-    // ---- longest match for operators ----
-    std::string op;
-    std::string bestMatch;
+    // ---- DFA traversal ----
+    OpNode* cur = opRoot;
+    OpNode* lastAccept = nullptr;
 
-    size_t j = i;
+    size_t start = i;
+    size_t lastPos = i;
 
-    while (j < src.size()) {
-        op += src[j];
+    while (true) {
+        char ch = peek();
 
-        if (operators.count(op)) {
-            bestMatch = op;
+        if (!cur->next.count(ch))
+            break;
+
+        cur = cur->next[ch];
+        get();
+
+        if (cur->token) {
+            lastAccept = cur;
+            lastPos = i;
         }
-
-        j++;
     }
 
-    if (!bestMatch.empty()) {
-        for (size_t k = 0; k < bestMatch.size(); ++k)
-            get();
-
-        return {operators.at(bestMatch), bestMatch};
+    if (lastAccept) {
+        i = lastPos;
+        return {
+            *(lastAccept->token),
+            src.substr(start, lastPos - start)
+        };
     }
 
     // ---- fallback ----
