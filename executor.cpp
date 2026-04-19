@@ -2,6 +2,7 @@
 
 #include "scope_tracker.hpp"
 #include "logger.hpp"
+#include "utils.hpp"
 
 #include <iostream>
 
@@ -32,6 +33,8 @@ void executor::run(const std::string& code) {
     if (scp_tracker.getLevel() != 0) {
         LOGGER.error("Unclosed scope detected.");
     }
+
+    printTokens(tokens);
 
     std::cout << "\nLogs:\n";
     LOGGER.print();

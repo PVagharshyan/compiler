@@ -20,6 +20,7 @@ INCDIRS += -I$(PROJECT_DIR)
 
 OBJS := $(BUILD_DIR)/main.o
 OBJS += $(BUILD_DIR)/executor.o
+OBJS += $(BUILD_DIR)/utils.o
 OBJS += $(LEXER_SRCS:$(LEXER_DIR)/src/%.cpp=$(BUILD_DIR)/lexer_%.o)
 OBJS += $(LOGGER_SRCS:$(LOGGER_DIR)/src/%.cpp=$(BUILD_DIR)/loger_%.o)
 

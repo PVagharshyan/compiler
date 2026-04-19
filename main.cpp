@@ -1,6 +1,7 @@
 #include "executor.hpp"
 #include "logger.hpp"
 
+#include <iostream>
 #include <vector>
 #include <string>
 
@@ -25,6 +26,17 @@ int main() {
     for (const auto& code : tests) {
         exec.run(code);
     }
+
+
+    std::string str = "{";
+    for (auto &item : exec.getTokens()) {
+        str += item.value + ",";
+    }
+
+    str += "}";
+
+    std::cout << str << std::endl;
+
 
     return 0;
 }
