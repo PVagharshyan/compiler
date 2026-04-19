@@ -1,30 +1,30 @@
-#include "lexer.hpp"
-#include "scope_tracker.hpp"
-#include "error_reporter.hpp"
+#include "executor.hpp"
+#include "logger.hpp"
 
-#include <iostream>
+#include <vector>
 #include <string>
 
 int main() {
-    std::string code =
-        "if (a) { "
-        "   while(b) { c = c + 1; } "
-        "} else { for(i=0; i; i=i+1) {} }";
 
-    lexer          lex(code);
-    scope_tracker  scp_traker;
-    error_reporter reporter;
+    std::vector<std::string> tests = {
+        "if (x == 10) { y = x + 5; } else { y = 0; }",
 
-    while (true) {
-        Token t = lex.nextToken();
-        scp_traker.process(t);
+        "while (i < 10) { for (j = 0; j < i; j = j + 1) { if (j % 2 == 0) { sum = sum + j; } } }",
 
-        if (t.type == TokenType::EndOfFile) {
-            if (scp_traker.getLevel() != 0) {
-                reporter.report(ErrorType::SemanticError, "Unclosed scope detected.", 0, 0);
-            }
-            reporter.print();
-            break;
-        }
+        "_var1 = 10; __hidden__ = _var1 + 20; a123b = __hidden__;",
+
+        "a = 5; b = 10; if (a <= b) { c = a + b * 2 - 3 / 1; } if (a != b) { c = 0; }",
+
+        "x = 10 @ 20; y = #invalid; z = 5 ^ 2;"
+    };
+
+    executor exec;
+
+    LOGGER.set_verbosity(0);
+
+    for (const auto& code : tests) {
+        exec.run(code);
     }
+
+    return 0;
 }
