@@ -1,5 +1,2 @@
-run/build/lexer_lexer.o
-run/build/lexer_scope_tracker.o
-run/build/loger_error_reporter.o
-run/build/main.o
+run/build/*.o
 run/compiler
