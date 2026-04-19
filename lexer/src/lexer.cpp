@@ -1,11 +1,21 @@
 #include "lexer.hpp"
 
+#include <cctype>
 #include <string>
+#include <unordered_map>
 
-lexer::lexer(const std::string& s) : src(s) {
-    //
-}
+// -------------------- KEYWORDS --------------------
+static const std::unordered_map<std::string, TokenType> keywords = {
+    {"if", TokenType::If},
+    {"else", TokenType::Else},
+    {"while", TokenType::While},
+    {"for", TokenType::For}
+};
 
+// -------------------- CTOR --------------------
+lexer::lexer(const std::string& s) : src(s) {}
+
+// -------------------- BASIC OPS --------------------
 char lexer::peek() const {
     return i < src.size() ? src[i] : '\0';
 }
@@ -15,13 +25,10 @@ char lexer::get() {
 }
 
 void lexer::skipSpaces() {
-    while (isspace(peek())) get();
+    while (std::isspace(peek())) get();
 }
 
-bool lexer::isKeyword(const std::string& w) const {
-    return w == "if" || w == "else" || w == "while" || w == "for";
-}
-
+// -------------------- TOKENIZER --------------------
 Token lexer::nextToken() {
     skipSpaces();
     char c = peek();
@@ -29,40 +36,79 @@ Token lexer::nextToken() {
     if (c == '\0')
         return {TokenType::EndOfFile, ""};
 
-    // IDENT / KEYWORD
-    if (isalpha(c) || c == '_') {
+    // ---------- IDENTIFIER / KEYWORD ----------
+    if (std::isalpha(c) || c == '_') {
         std::string w;
-        while (isalnum(peek()) || peek() == '_')
+        while (std::isalnum(peek()) || peek() == '_')
             w += get();
 
-        if (w == "if") return {TokenType::If, w};
-        if (w == "else") return {TokenType::Else, w};
-        if (w == "while") return {TokenType::While, w};
-        if (w == "for") return {TokenType::For, w};
+        auto it = keywords.find(w);
+        if (it != keywords.end())
+            return {it->second, w};
 
         return {TokenType::Identifier, w};
     }
 
-    // NUMBER
-    if (isdigit(c)) {
+    // ---------- NUMBER ----------
+    if (std::isdigit(c)) {
         std::string n;
-        while (isdigit(peek()))
+        while (std::isdigit(peek()))
             n += get();
 
         return {TokenType::Number, n};
     }
 
-    // SYMBOLS
-    switch (get()) {
-        case '{': return {TokenType::LBrace, "{"};
-        case '}': return {TokenType::RBrace, "}"};
-        case '(': return {TokenType::LParen, "("};
-        case ')': return {TokenType::RParen, ")"};
-        case ';': return {TokenType::Semicolon, ";"};
-        case '=': return {TokenType::Assign, "="};
-        case '+': case '-': case '*': case '/':
-            return {TokenType::Operator, std::string(1, c)};
+    // ---------- OPERATORS / SYMBOLS ----------
+    switch (c) {
+        case '{': get(); return {TokenType::LBrace, "{"};
+        case '}': get(); return {TokenType::RBrace, "}"};
+        case '(': get(); return {TokenType::LParen, "("};
+        case ')': get(); return {TokenType::RParen, ")"};
+        case ';': get(); return {TokenType::Semicolon, ";"};
+
+        case '+': case '-': case '*': case '/': {
+            char op = get();
+            return {TokenType::Operator, std::string(1, op)};
+        }
+
+        case '=': {
+            get();
+            if (peek() == '=') {
+                get();
+                return {TokenType::Operator, "=="};
+            }
+            return {TokenType::Assign, "="};
+        }
+
+        case '!': {
+            get();
+            if (peek() == '=') {
+                get();
+                return {TokenType::Operator, "!="};
+            }
+            return {TokenType::Unknown, "!"};
+        }
+
+        case '<': {
+            get();
+            if (peek() == '=') {
+                get();
+                return {TokenType::Operator, "<="};
+            }
+            return {TokenType::Operator, "<"};
+        }
+
+        case '>': {
+            get();
+            if (peek() == '=') {
+                get();
+                return {TokenType::Operator, ">="};
+            }
+            return {TokenType::Operator, ">"};
+        }
     }
 
-    return {TokenType::Unknown, std::string(1, get())};
+    // ---------- UNKNOWN ----------
+    char unknown = get();
+    return {TokenType::Unknown, std::string(1, unknown)};
 }
