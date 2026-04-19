@@ -25,6 +25,7 @@ OBJS := $(BUILD_DIR)/main.o
 OBJS += $(LEXER_SRCS:$(LEXER_DIR)/src/%.cpp=$(BUILD_DIR)/lexer_%.o)
 OBJS += $(LOGGER_SRCS:$(LOGGER_DIR)/src/%.cpp=$(BUILD_DIR)/loger_%.o)
 
+.PHONE: all 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
@@ -42,8 +43,10 @@ $(BUILD_DIR)/loger_%.o: $(LOGGER_DIR)/src/%.cpp
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
 
+.PHONE: clean 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-run: $(TARGET)
+.PHONE: run 
+run: all
 	./$(TARGET)
