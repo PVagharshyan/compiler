@@ -3,6 +3,7 @@
 #include "token_types.hpp"
 
 #include <string>
+#include <unordered_map>
 
 class lexer {
     std::string src;
@@ -12,12 +13,14 @@ public:
     lexer(const std::string&);
 
     char peek() const;
-
     char get();
-
     void skipSpaces();
 
-    bool isKeyword(const std::string&) const;
-
     Token nextToken();
+
+private:
+    // ---- separated logic ----
+    Token readIdentifierOrKeyword();
+    Token readNumber();
+    Token readOperatorOrSymbol();
 };

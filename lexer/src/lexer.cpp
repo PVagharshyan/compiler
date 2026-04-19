@@ -1,7 +1,6 @@
 #include "lexer.hpp"
 
 #include <cctype>
-#include <string>
 #include <unordered_map>
 
 // -------------------- KEYWORDS --------------------
@@ -10,6 +9,28 @@ static const std::unordered_map<std::string, TokenType> keywords = {
     {"else", TokenType::Else},
     {"while", TokenType::While},
     {"for", TokenType::For}
+};
+
+// -------------------- OPERATORS (EXTENSIBLE) --------------------
+static const std::unordered_map<std::string, TokenType> operators = {
+    {"+", TokenType::Operator},
+    {"-", TokenType::Operator},
+    {"*", TokenType::Operator},
+    {"/", TokenType::Operator},
+
+    {"=", TokenType::Assign},
+    {"==", TokenType::Operator},
+    {"!=", TokenType::Operator},
+
+    {"<", TokenType::Operator},
+    {"<=", TokenType::Operator},
+    {">", TokenType::Operator},
+    {">=", TokenType::Operator},
+
+    // you can extend freely:
+    // {"&&", TokenType::Operator},
+    // {"||", TokenType::Operator},
+    // {"<<=", TokenType::Operator},
 };
 
 // -------------------- CTOR --------------------
@@ -25,90 +46,88 @@ char lexer::get() {
 }
 
 void lexer::skipSpaces() {
-    while (std::isspace(peek())) get();
+    while (std::isspace(peek()))
+        get();
 }
 
-// -------------------- TOKENIZER --------------------
+// -------------------- MAIN DISPATCHER --------------------
 Token lexer::nextToken() {
     skipSpaces();
+
     char c = peek();
 
     if (c == '\0')
         return {TokenType::EndOfFile, ""};
 
-    // ---------- IDENTIFIER / KEYWORD ----------
-    if (std::isalpha(c) || c == '_') {
-        std::string w;
-        while (std::isalnum(peek()) || peek() == '_')
-            w += get();
+    if (std::isalpha(c) || c == '_')
+        return readIdentifierOrKeyword();
 
-        auto it = keywords.find(w);
-        if (it != keywords.end())
-            return {it->second, w};
+    if (std::isdigit(c))
+        return readNumber();
 
-        return {TokenType::Identifier, w};
-    }
+    return readOperatorOrSymbol();
+}
 
-    // ---------- NUMBER ----------
-    if (std::isdigit(c)) {
-        std::string n;
-        while (std::isdigit(peek()))
-            n += get();
+// -------------------- IDENTIFIER / KEYWORD --------------------
+Token lexer::readIdentifierOrKeyword() {
+    std::string w;
 
-        return {TokenType::Number, n};
-    }
+    while (std::isalnum(peek()) || peek() == '_')
+        w += get();
 
-    // ---------- OPERATORS / SYMBOLS ----------
+    auto it = keywords.find(w);
+    if (it != keywords.end())
+        return {it->second, w};
+
+    return {TokenType::Identifier, w};
+}
+
+// -------------------- NUMBER --------------------
+Token lexer::readNumber() {
+    std::string n;
+
+    while (std::isdigit(peek()))
+        n += get();
+
+    return {TokenType::Number, n};
+}
+
+// -------------------- OPERATOR / SYMBOL --------------------
+Token lexer::readOperatorOrSymbol() {
+    char c = peek();
+
+    // ---- single char symbols (keep separate) ----
     switch (c) {
         case '{': get(); return {TokenType::LBrace, "{"};
         case '}': get(); return {TokenType::RBrace, "}"};
         case '(': get(); return {TokenType::LParen, "("};
         case ')': get(); return {TokenType::RParen, ")"};
         case ';': get(); return {TokenType::Semicolon, ";"};
-
-        case '+': case '-': case '*': case '/': {
-            char op = get();
-            return {TokenType::Operator, std::string(1, op)};
-        }
-
-        case '=': {
-            get();
-            if (peek() == '=') {
-                get();
-                return {TokenType::Operator, "=="};
-            }
-            return {TokenType::Assign, "="};
-        }
-
-        case '!': {
-            get();
-            if (peek() == '=') {
-                get();
-                return {TokenType::Operator, "!="};
-            }
-            return {TokenType::Unknown, "!"};
-        }
-
-        case '<': {
-            get();
-            if (peek() == '=') {
-                get();
-                return {TokenType::Operator, "<="};
-            }
-            return {TokenType::Operator, "<"};
-        }
-
-        case '>': {
-            get();
-            if (peek() == '=') {
-                get();
-                return {TokenType::Operator, ">="};
-            }
-            return {TokenType::Operator, ">"};
-        }
     }
 
-    // ---------- UNKNOWN ----------
-    char unknown = get();
-    return {TokenType::Unknown, std::string(1, unknown)};
+    // ---- longest match for operators ----
+    std::string op;
+    std::string bestMatch;
+
+    size_t j = i;
+
+    while (j < src.size()) {
+        op += src[j];
+
+        if (operators.count(op)) {
+            bestMatch = op;
+        }
+
+        j++;
+    }
+
+    if (!bestMatch.empty()) {
+        for (size_t k = 0; k < bestMatch.size(); ++k)
+            get();
+
+        return {operators.at(bestMatch), bestMatch};
+    }
+
+    // ---- fallback ----
+    return {TokenType::Unknown, std::string(1, get())};
 }
