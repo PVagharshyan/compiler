@@ -49,9 +49,8 @@ void lexer::initOperatorAutomaton() {
     addOperator(">", TokenType::Operator);
     addOperator(">=", TokenType::Operator);
 
-    // extend freely:
-    // addOperator("&&", TokenType::Operator);
-    // addOperator("||", TokenType::Operator);
+    addOperator("&&", TokenType::Operator);
+    addOperator("||", TokenType::Operator);
     // addOperator("<<", TokenType::Operator);
     // addOperator("<<=", TokenType::Operator);
 }
