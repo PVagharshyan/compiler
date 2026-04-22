@@ -56,19 +56,37 @@ struct binary_expr : expr {
     std::string op;
     std::unique_ptr<expr> left;
     std::unique_ptr<expr> right;
+
+    binary_expr(std::string op,
+                std::unique_ptr<expr> left,
+                std::unique_ptr<expr> right)
+        : op(std::move(op)),
+          left(std::move(left)),
+          right(std::move(right)) {}
 };
 
 struct number : expr {
     int value;
+
+    explicit number(int value)
+        : value(value) {}
 };
 
 struct identifier : expr {
     std::string name;
+
+    explicit identifier(std::string name)
+        : name(std::move(name)) {}
 };
 
 struct assign_expr : expr {
     std::string name;
     std::unique_ptr<expr> value;
+
+    assign_expr(std::string name,
+                std::unique_ptr<expr> value)
+        : name(std::move(name)),
+          value(std::move(value)) {}
 };
 
 // -----------------------
@@ -80,17 +98,34 @@ struct stmt {
 struct assign_stmt : stmt {
     std::string name;
     std::unique_ptr<expr> value;
+
+    assign_stmt(std::string name,
+                std::unique_ptr<expr> value)
+        : name(std::move(name)),
+          value(std::move(value)) {}
 };
 
 struct if_stmt : stmt {
     std::unique_ptr<expr> condition;
     std::vector<std::unique_ptr<stmt>> then_block;
     std::vector<std::unique_ptr<stmt>> else_block;
+
+    if_stmt(std::unique_ptr<expr> condition,
+            std::vector<std::unique_ptr<stmt>> then_block,
+            std::vector<std::unique_ptr<stmt>> else_block)
+        : condition(std::move(condition)),
+          then_block(std::move(then_block)),
+          else_block(std::move(else_block)) {}
 };
 
 struct while_stmt : stmt {
     std::unique_ptr<expr> condition;
     std::vector<std::unique_ptr<stmt>> body;
+
+    while_stmt(std::unique_ptr<expr> condition,
+               std::vector<std::unique_ptr<stmt>> body)
+        : condition(std::move(condition)),
+          body(std::move(body)) {}
 };
 
 struct for_stmt : stmt {
@@ -98,4 +133,13 @@ struct for_stmt : stmt {
     std::unique_ptr<expr> condition;
     std::unique_ptr<assign_expr> update;
     std::vector<std::unique_ptr<stmt>> body;
+
+    for_stmt(std::unique_ptr<assign_expr> init,
+             std::unique_ptr<expr> condition,
+             std::unique_ptr<assign_expr> update,
+             std::vector<std::unique_ptr<stmt>> body)
+        : init(std::move(init)),
+          condition(std::move(condition)),
+          update(std::move(update)),
+          body(std::move(body)) {}
 };
