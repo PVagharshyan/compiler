@@ -7,6 +7,7 @@ PROJECT_DIR := ..
 BUILD_DIR   := build
 LEXER_DIR   := $(PROJECT_DIR)/lexer
 LOGGER_DIR   := $(PROJECT_DIR)/logger
+PARSER_DIR   := $(PROJECT_DIR)/parser
 
 LEXER_SRCS    := $(wildcard $(LEXER_DIR)/src/*.cpp)
 LEXER_INCDIRS := -I$(LEXER_DIR)/include 
@@ -14,15 +15,20 @@ LEXER_INCDIRS := -I$(LEXER_DIR)/include
 LOGGER_SRCS    := $(wildcard $(LOGGER_DIR)/src/*.cpp)
 LOGGER_INCDIRS := -I$(LOGGER_DIR)/include 
 
+PARSER_SRCS    := $(wildcard $(PARSER_DIR)/src/*.cpp)
+PARSER_INCDIRS := -I$(PARSER_DIR)/include
+
 INCDIRS := $(LEXER_INCDIRS)
 INCDIRS += $(LOGGER_INCDIRS)
 INCDIRS += -I$(PROJECT_DIR)
+INCDIRS += $(PARSER_INCDIRS)
 
 OBJS := $(BUILD_DIR)/main.o
 OBJS += $(BUILD_DIR)/executor.o
 OBJS += $(BUILD_DIR)/utils.o
 OBJS += $(LEXER_SRCS:$(LEXER_DIR)/src/%.cpp=$(BUILD_DIR)/lexer_%.o)
 OBJS += $(LOGGER_SRCS:$(LOGGER_DIR)/src/%.cpp=$(BUILD_DIR)/loger_%.o)
+OBJS += $(PARSER_SRCS:$(PARSER_DIR)/src/%.cpp=$(BUILD_DIR)/parser_%.o)
 
 .PHONE: all 
 all: $(TARGET)
@@ -39,6 +45,10 @@ $(BUILD_DIR)/lexer_%.o: $(LEXER_DIR)/src/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
 
 $(BUILD_DIR)/loger_%.o: $(LOGGER_DIR)/src/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
+
+$(BUILD_DIR)/parser_%.o: $(PARSER_DIR)/src/%.cpp
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
 

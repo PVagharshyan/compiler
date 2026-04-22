@@ -33,6 +33,10 @@ void logger::error(const std::string& msg, int verbosity) {
 
 // ---------------- Print ----------------
 void logger::print() const {
+    if (logs.size() == 0) {
+        std::cout << "The log has not been found." << std::endl;
+    }
+
     for (const auto& e : logs) {
 
         const char* levelStr =

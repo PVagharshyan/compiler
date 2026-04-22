@@ -10,7 +10,7 @@ void executor::run(const std::string& code) {
 
     tokens.clear();
 
-    LOGGER.info("executed code:" + code, 1);
+    LOGGER.info("executed code:" + code, 2);
 
     lexer lex(code);
     scope_tracker scp_tracker;
@@ -34,7 +34,8 @@ void executor::run(const std::string& code) {
         LOGGER.error("Unclosed scope detected.");
     }
 
-    printTokens(tokens);
+    std::string tockens_str = printTokensToString(tokens);
+    LOGGER.info(tockens_str, 2);
 
     std::cout << "\nLogs:\n";
     LOGGER.print();

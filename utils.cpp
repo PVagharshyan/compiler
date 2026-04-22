@@ -27,25 +27,29 @@ std::string tokenTypeToString(TokenType type) {
     return "???";
 }
 
-void printTokens(const std::vector<Token>& tokens) {
-    std::cout << "\nTokens:\n";
-    std::cout << "----------------------------------------\n";
-    std::cout << std::left
-              << std::setw(5)  << "Idx"
-              << std::setw(15) << "Type"
-              << std::setw(15) << "Value"
-              << "\n";
-    std::cout << "----------------------------------------\n";
+std::string printTokensToString(const std::vector<Token>& tokens) {
+    std::ostringstream oss;
+
+    oss << "\nTokens:\n";
+    oss << "----------------------------------------\n";
+    oss << std::left
+        << std::setw(5)  << "Idx"
+        << std::setw(15) << "Type"
+        << std::setw(15) << "Value"
+        << "\n";
+    oss << "----------------------------------------\n";
 
     for (size_t i = 0; i < tokens.size(); ++i) {
         const auto& t = tokens[i];
 
-        std::cout << std::left
-                  << std::setw(5)  << i
-                  << std::setw(15) << tokenTypeToString(t.type)
-                  << std::setw(15) << ("\"" + t.value + "\"")
-                  << "\n";
+        oss << std::left
+            << std::setw(5)  << i
+            << std::setw(15) << tokenTypeToString(t.type)
+            << std::setw(15) << ("\"" + t.value + "\"")
+            << "\n";
     }
 
-    std::cout << "----------------------------------------\n";
+    oss << "----------------------------------------\n";
+
+    return oss.str();
 }

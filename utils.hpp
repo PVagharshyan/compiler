@@ -7,4 +7,4 @@
 
 std::string tokenTypeToString(TokenType type);
 
-void printTokens(const std::vector<Token>& tokens);
+std::string printTokensToString(const std::vector<Token>& tokens);

@@ -37,3 +37,65 @@
     
     factor        -> IDENTIFIER | NUMBER | "(" expr ")"
 */
+
+#pragma once
+
+#include <memory>
+#include <vector>
+#include <string>
+
+// =======================
+// AST declarations
+// =======================
+
+struct expr {
+    virtual ~expr() = default;
+};
+
+struct binary_expr : expr {
+    std::string op;
+    std::unique_ptr<expr> left;
+    std::unique_ptr<expr> right;
+};
+
+struct number : expr {
+    int value;
+};
+
+struct identifier : expr {
+    std::string name;
+};
+
+struct assign_expr : expr {
+    std::string name;
+    std::unique_ptr<expr> value;
+};
+
+// -----------------------
+
+struct stmt {
+    virtual ~stmt() = default;
+};
+
+struct assign_stmt : stmt {
+    std::string name;
+    std::unique_ptr<expr> value;
+};
+
+struct if_stmt : stmt {
+    std::unique_ptr<expr> condition;
+    std::vector<std::unique_ptr<stmt>> then_block;
+    std::vector<std::unique_ptr<stmt>> else_block;
+};
+
+struct while_stmt : stmt {
+    std::unique_ptr<expr> condition;
+    std::vector<std::unique_ptr<stmt>> body;
+};
+
+struct for_stmt : stmt {
+    std::unique_ptr<assign_expr> init;
+    std::unique_ptr<expr> condition;
+    std::unique_ptr<assign_expr> update;
+    std::vector<std::unique_ptr<stmt>> body;
+};
