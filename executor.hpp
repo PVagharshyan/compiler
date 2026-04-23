@@ -1,14 +1,21 @@
 #pragma once
 
-#include "lexer.hpp"
+#include "grammar.hpp"
+#include "token_types.hpp"
+
 #include <vector>
 #include <string>
+#include <memory>
 
 class executor {
+private:
     std::vector<Token> tokens;
+
+    std::vector<std::unique_ptr<stmt>> ast;
 
 public:
     void run(const std::string& code);
 
     const std::vector<Token>& getTokens() const;
+    const std::vector<std::unique_ptr<stmt>>& getAST() const;
 };

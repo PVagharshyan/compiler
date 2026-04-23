@@ -73,7 +73,7 @@ int main() {
 
     executor exec;
 
-    LOGGER.set_verbosity(3);
+    LOGGER.set_verbosity(2);
 
     for (const auto& code : tests) {
         exec.run(code);

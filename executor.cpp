@@ -3,15 +3,21 @@
 #include "scope_tracker.hpp"
 #include "logger.hpp"
 #include "utils.hpp"
+#include "lexer.hpp"
+#include "parser.hpp"
 
 #include <iostream>
 
 void executor::run(const std::string& code) {
 
     tokens.clear();
+    ast.clear();
 
-    LOGGER.info("executed code:" + code, 2);
+    LOGGER.info("executed code: " + code, 2);
 
+    // =========================
+    // 1. LEXER PHASE
+    // =========================
     lexer lex(code);
     scope_tracker scp_tracker;
 
@@ -19,7 +25,6 @@ void executor::run(const std::string& code) {
         Token t = lex.nextToken();
 
         tokens.push_back(t);
-
         scp_tracker.process(t);
 
         if (t.type == TokenType::Unknown) {
@@ -34,14 +39,34 @@ void executor::run(const std::string& code) {
         LOGGER.error("Unclosed scope detected.");
     }
 
-    std::string tockens_str = printTokensToString(tokens);
-    LOGGER.info(tockens_str, 2);
+    LOGGER.info(printTokensToString(tokens), 2);
 
-    std::cout << "\nLogs:\n";
+    // =========================
+    // 2. PARSER PHASE (NEW)
+    // =========================
+    try {
+        lexer lex2(code);   // fresh lexer for parser (important!)
+        parser p(lex2);
+
+        ast = p.program();
+    }
+    catch (const std::exception& e) {
+        LOGGER.error(std::string("Parser error: ") + e.what());
+    }
+
+    // =========================
+    // DEBUG OUTPUT
+    // =========================
+
+    std::cout << "\nLog:\n";
     LOGGER.print();
     LOGGER.clear();
 }
 
 const std::vector<Token>& executor::getTokens() const {
     return tokens;
+}
+
+const std::vector<std::unique_ptr<stmt>>& executor::getAST() const {
+    return ast;
 }
