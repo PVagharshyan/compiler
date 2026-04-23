@@ -53,6 +53,7 @@ void executor::run(const std::string& code) {
     catch (const std::exception& e) {
         LOGGER.error(std::string("Parser error: ") + e.what());
     }
+    LOGGER.info(ast_to_string(ast), 2);
 
     // =========================
     // DEBUG OUTPUT
