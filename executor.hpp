@@ -15,7 +15,4 @@ private:
 
 public:
     void run(const std::string& code);
-
-    const std::vector<Token>& getTokens() const;
-    const std::vector<std::unique_ptr<stmt>>& getAST() const;
 };
