@@ -17,7 +17,9 @@ private:
     lexer& lex;
     Token current;
 
-    // --- core helpers ---
+    // =======================
+    // core helpers
+    // =======================
     void advance();
     void expect(TokenType type);
     bool is_stmt_start(TokenType type);
@@ -25,13 +27,18 @@ private:
 public:
     explicit parser(lexer& l);
 
-    // --- top level ---
+    // =======================
+    // program
+    // =======================
     std::vector<std::unique_ptr<stmt>> program();
 
-    // --- statements ---
+    // =======================
+    // statements
+    // =======================
     std::vector<std::unique_ptr<stmt>> stmt_list();
     std::unique_ptr<stmt> stmt_rule();
 
+    std::unique_ptr<stmt> var_decl_rule();        // NEW: integral x = ...
     std::unique_ptr<stmt> assign_stmt_rule();
     std::unique_ptr<assign_expr> assign_expr_rule();
 
@@ -41,17 +48,23 @@ public:
 
     std::vector<std::unique_ptr<stmt>> block();
 
-    // --- expressions ---
+    // =======================
+    // expressions
+    // =======================
     std::unique_ptr<expr> expr_rule();
 
     std::unique_ptr<expr> logical_or();
     std::unique_ptr<expr> logical_and();
-
     std::unique_ptr<expr> equality();
     std::unique_ptr<expr> relational();
-
     std::unique_ptr<expr> additive();
     std::unique_ptr<expr> term();
-
     std::unique_ptr<expr> factor();
+
+    std::unique_ptr<expr> lvalue_rule();
+    // =======================
+    // (optional future extension)
+    // =======================
+    // std::unique_ptr<expr> array_access_rule();
+    // std::unique_ptr<expr> array_literal_rule();
 };

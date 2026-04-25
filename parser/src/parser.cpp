@@ -19,13 +19,16 @@ void parser::advance() {
 
 void parser::expect(TokenType type) {
     if (current.type != type) {
-        throw std::runtime_error("unexpected token: " + current.value);
+        throw std::runtime_error(
+            "unexpected token: " + current.value
+        );
     }
     advance();
 }
 
 bool parser::is_stmt_start(TokenType type) {
     return type == TokenType::Identifier ||
+           type == TokenType::Integral ||
            type == TokenType::If ||
            type == TokenType::While ||
            type == TokenType::For;
@@ -60,6 +63,10 @@ std::vector<std::unique_ptr<stmt>> parser::stmt_list() {
 // =======================
 
 std::unique_ptr<stmt> parser::stmt_rule() {
+
+    if (current.type == TokenType::Integral)
+        return var_decl_rule();
+
     if (current.type == TokenType::Identifier)
         return assign_stmt_rule();
 
@@ -72,41 +79,92 @@ std::unique_ptr<stmt> parser::stmt_rule() {
     if (current.type == TokenType::For)
         return for_stmt_rule();
 
-    throw std::runtime_error("invalid statement");
+    throw std::runtime_error("invalid statement: " + current.value);
 }
 
 // =======================
-// assign_stmt
+// var_decl
 // =======================
 
-std::unique_ptr<stmt> parser::assign_stmt_rule() {
+std::unique_ptr<stmt> parser::var_decl_rule() {
+    expect(TokenType::Integral);
+
     std::string name = current.value;
     expect(TokenType::Identifier);
 
     expect(TokenType::Assign);
+
+    auto value = expr_rule();
+
+    expect(TokenType::Semicolon);
+
+    return std::make_unique<var_decl_stmt>(
+        name, std::move(value)
+    );
+}
+
+// =======================
+// lvalue (NEW)
+// =======================
+
+std::unique_ptr<expr> parser::lvalue_rule() {
+    std::string name = current.value;
+    expect(TokenType::Identifier);
+
+    if (current.type == TokenType::LBracket) {
+        advance();
+
+        auto index = expr_rule();
+
+        expect(TokenType::RBracket);
+
+        return std::make_unique<array_access>(
+            name, std::move(index)
+        );
+    }
+
+    return std::make_unique<identifier>(name);
+}
+
+// =======================
+// assign_stmt (FIXED)
+// =======================
+
+std::unique_ptr<stmt> parser::assign_stmt_rule() {
+    auto lhs = lvalue_rule();
+
+    expect(TokenType::Assign);
+
     auto value = expr_rule();
 
     expect(TokenType::Semicolon);
 
     return std::make_unique<assign_stmt>(
-        assign_stmt{name, std::move(value)}
+        std::move(lhs),
+        std::move(value)
     );
 }
 
 // =======================
-// assign_expr
+// assign_expr (FIXED)
 // =======================
 
 std::unique_ptr<assign_expr> parser::assign_expr_rule() {
-    std::string name = current.value;
-    expect(TokenType::Identifier);
+    auto lhs = lvalue_rule();
 
     expect(TokenType::Assign);
+
     auto value = expr_rule();
 
-    return std::make_unique<assign_expr>(
-        assign_expr{name, std::move(value)}
-    );
+    // Your current design only supports identifier in assign_expr
+    if (auto id = dynamic_cast<identifier*>(lhs.get())) {
+        return std::make_unique<assign_expr>(
+            id->name,
+            std::move(value)
+        );
+    }
+
+    throw std::runtime_error("invalid assignment target in for-statement");
 }
 
 // =======================
@@ -131,7 +189,9 @@ std::unique_ptr<stmt> parser::if_stmt_rule() {
     }
 
     return std::make_unique<if_stmt>(
-        if_stmt{std::move(condition), std::move(then_block), std::move(else_block)}
+        std::move(condition),
+        std::move(then_block),
+        std::move(else_block)
     );
 }
 
@@ -150,7 +210,8 @@ std::unique_ptr<stmt> parser::while_stmt_rule() {
     auto body = block();
 
     return std::make_unique<while_stmt>(
-        while_stmt{std::move(condition), std::move(body)}
+        std::move(condition),
+        std::move(body)
     );
 }
 
@@ -175,7 +236,10 @@ std::unique_ptr<stmt> parser::for_stmt_rule() {
     auto body = block();
 
     return std::make_unique<for_stmt>(
-        for_stmt{std::move(init), std::move(condition), std::move(update), std::move(body)}
+        std::move(init),
+        std::move(condition),
+        std::move(update),
+        std::move(body)
     );
 }
 
@@ -185,13 +249,16 @@ std::unique_ptr<stmt> parser::for_stmt_rule() {
 
 std::vector<std::unique_ptr<stmt>> parser::block() {
     expect(TokenType::LBrace);
+
     auto result = stmt_list();
+
     expect(TokenType::RBrace);
+
     return result;
 }
 
 // =======================
-// expr
+// expressions
 // =======================
 
 std::unique_ptr<expr> parser::expr_rule() {
@@ -212,7 +279,7 @@ std::unique_ptr<expr> parser::logical_or() {
         auto right = logical_and();
 
         left = std::make_unique<binary_expr>(
-            binary_expr{op, std::move(left), std::move(right)}
+            op, std::move(left), std::move(right)
         );
     }
 
@@ -233,7 +300,7 @@ std::unique_ptr<expr> parser::logical_and() {
         auto right = equality();
 
         left = std::make_unique<binary_expr>(
-            binary_expr{op, std::move(left), std::move(right)}
+            op, std::move(left), std::move(right)
         );
     }
 
@@ -256,7 +323,7 @@ std::unique_ptr<expr> parser::equality() {
         auto right = relational();
 
         left = std::make_unique<binary_expr>(
-            binary_expr{op, std::move(left), std::move(right)}
+            op, std::move(left), std::move(right)
         );
     }
 
@@ -280,7 +347,7 @@ std::unique_ptr<expr> parser::relational() {
         auto right = additive();
 
         left = std::make_unique<binary_expr>(
-            binary_expr{op, std::move(left), std::move(right)}
+            op, std::move(left), std::move(right)
         );
     }
 
@@ -303,7 +370,7 @@ std::unique_ptr<expr> parser::additive() {
         auto right = term();
 
         left = std::make_unique<binary_expr>(
-            binary_expr{op, std::move(left), std::move(right)}
+            op, std::move(left), std::move(right)
         );
     }
 
@@ -326,7 +393,7 @@ std::unique_ptr<expr> parser::term() {
         auto right = factor();
 
         left = std::make_unique<binary_expr>(
-            binary_expr{op, std::move(left), std::move(right)}
+            op, std::move(left), std::move(right)
         );
     }
 
@@ -338,24 +405,64 @@ std::unique_ptr<expr> parser::term() {
 // =======================
 
 std::unique_ptr<expr> parser::factor() {
+
     if (current.type == TokenType::Number) {
         int value = std::stoi(current.value);
         advance();
-        return std::make_unique<number>(number{value});
+        return std::make_unique<number>(value);
     }
 
     if (current.type == TokenType::Identifier) {
         std::string name = current.value;
         advance();
-        return std::make_unique<identifier>(identifier{name});
+
+        if (current.type == TokenType::LBracket) {
+            advance();
+
+            auto index = expr_rule();
+
+            expect(TokenType::RBracket);
+
+            return std::make_unique<array_access>(
+                name, std::move(index)
+            );
+        }
+
+        return std::make_unique<identifier>(name);
+    }
+
+    if (current.type == TokenType::LBracket) {
+        advance();
+
+        std::vector<std::unique_ptr<expr>> elements;
+
+        if (current.type != TokenType::RBracket) {
+            elements.push_back(expr_rule());
+
+            while (current.type == TokenType::Comma) {
+                advance();
+                elements.push_back(expr_rule());
+            }
+        }
+
+        expect(TokenType::RBracket);
+
+        return std::make_unique<array_literal>(
+            std::move(elements)
+        );
     }
 
     if (current.type == TokenType::LParen) {
         advance();
+
         auto e = expr_rule();
+
         expect(TokenType::RParen);
+
         return e;
     }
 
-    throw std::runtime_error("invalid factor: " + current.value);
+    throw std::runtime_error(
+        "invalid factor: " + current.value
+    );
 }

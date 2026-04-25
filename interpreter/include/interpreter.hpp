@@ -4,28 +4,36 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <variant>
 
 #include "grammar.hpp"
 
+using value = std::variant<int, std::vector<int>>;
+
 class interpreter {
 private:
-    // scope stack: inner → outer
-    std::vector<std::unordered_map<std::string, int>> scopes;
+    std::vector<std::unordered_map<std::string, value>> scopes;
 
-    bool break_flag = false;
-
-    // --- scope helpers ---
+    // ---------- scope ----------
     void push_scope();
     void pop_scope();
 
-    int get_variable(const std::string& name);
-    void set_variable(const std::string& name, int value);
+    // ---------- variable ----------
+    value get_variable(const std::string& name);
+    void set_variable(const std::string& name, const value& val);
 
-    // --- execution ---
+    // ---------- helpers ----------
+    int as_int(const value& v);
+    std::vector<int> as_array(const value& v);
+
+    // ---------- execution ----------
     void exec_stmt(const stmt* s);
     void exec_block(const std::vector<std::unique_ptr<stmt>>& block);
 
-    int eval_expr(const expr* e);
+    value eval_expr(const expr* e);
+
+    // NEW: array mutation helper
+    void set_array_element(const std::string& name, int index, int value);
 
 public:
     void run(const std::vector<std::unique_ptr<stmt>>& ast);

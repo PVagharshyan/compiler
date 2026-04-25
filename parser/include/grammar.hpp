@@ -2,7 +2,14 @@
     program       -> stmt_list EOF
 
     stmt_list     -> stmt stmt_list | ε
-    stmt          -> assign_stmt | if_stmt | while_stmt | for_stmt
+    stmt          -> var_decl
+                  | assign_stmt
+                  | if_stmt
+                  | while_stmt
+                  | for_stmt
+
+    var_decl      -> "integral" IDENTIFIER "=" expr ";"
+                  | "integral" IDENTIFIER "=" array_literal ";"
 
     assign_stmt   -> IDENTIFIER "=" expr ";"
     assign_expr   -> IDENTIFIER "=" expr
@@ -35,7 +42,14 @@
     term          -> factor term'
     term'         -> ("*" | "/") factor term' | ε
     
-    factor        -> IDENTIFIER | NUMBER | "(" expr ")"
+    factor        -> IDENTIFIER
+                  | NUMBER
+                  | "(" expr ")"
+                  | IDENTIFIER "[" expr "]"
+                  | array_literal
+
+    array_literal -> "[" expr_list "]"
+    expr_list     -> expr ("," expr)*
 */
 
 #pragma once
@@ -89,19 +103,51 @@ struct assign_expr : expr {
           value(std::move(value)) {}
 };
 
-// -----------------------
+// array literal
+struct array_literal : expr {
+    std::vector<std::unique_ptr<expr>> elements;
+
+    explicit array_literal(std::vector<std::unique_ptr<expr>> elements)
+        : elements(std::move(elements)) {}
+};
+
+// array access
+struct array_access : expr {
+    std::string name;
+    std::unique_ptr<expr> index;
+
+    array_access(std::string name,
+                 std::unique_ptr<expr> index)
+        : name(std::move(name)),
+          index(std::move(index)) {}
+};
+
+// =======================
+// STATEMENTS
+// =======================
 
 struct stmt {
     virtual ~stmt() = default;
 };
 
-struct assign_stmt : stmt {
+// variable declaration
+struct var_decl_stmt : stmt {
     std::string name;
     std::unique_ptr<expr> value;
 
-    assign_stmt(std::string name,
-                std::unique_ptr<expr> value)
+    var_decl_stmt(std::string name,
+                  std::unique_ptr<expr> value)
         : name(std::move(name)),
+          value(std::move(value)) {}
+};
+
+struct assign_stmt : stmt {
+    std::unique_ptr<expr> target;
+    std::unique_ptr<expr> value;
+
+    assign_stmt(std::unique_ptr<expr> target,
+                std::unique_ptr<expr> value)
+        : target(std::move(target)),
           value(std::move(value)) {}
 };
 

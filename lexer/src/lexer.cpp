@@ -8,7 +8,8 @@ static const std::unordered_map<std::string, TokenType> keywords = {
     {"if", TokenType::If},
     {"else", TokenType::Else},
     {"while", TokenType::While},
-    {"for", TokenType::For}
+    {"for", TokenType::For},
+    {"integral", TokenType::Integral}
 };
 
 // -------------------- OPERATOR AUTOMATON --------------------
@@ -127,6 +128,9 @@ Token lexer::readOperatorOrSymbol() {
         case '(': get(); return {TokenType::LParen, "("};
         case ')': get(); return {TokenType::RParen, ")"};
         case ';': get(); return {TokenType::Semicolon, ";"};
+        case '[': get(); return {TokenType::LBracket, "["};
+        case ']': get(); return {TokenType::RBracket, "]"};
+        case ',': get(); return {TokenType::Comma, ","};
     }
 
     // ---- DFA traversal ----

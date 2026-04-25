@@ -4,6 +4,11 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <iomanip>
+
+// =======================
+// TOKEN PRINTING
+// =======================
 
 std::string tokenTypeToString(TokenType type) {
     switch (type) {
@@ -26,6 +31,11 @@ std::string tokenTypeToString(TokenType type) {
 
         case TokenType::EndOfFile: return "EOF";
         case TokenType::Unknown: return "Unknown";
+
+        case TokenType::Integral: return "Integral";
+        case TokenType::Comma: return "Comma";
+        case TokenType::LBracket: return "LBracket";
+        case TokenType::RBracket: return "RBracket";
     }
     return "???";
 }
@@ -57,20 +67,19 @@ std::string printTokensToString(const std::vector<Token>& tokens) {
     return oss.str();
 }
 
-// forward declarations
+// =======================
+// AST HELPERS
+// =======================
+
+static std::string indent_str(int indent) {
+    return std::string(indent * 2, ' ');
+}
+
 void build_stmt(const stmt* s, int indent, std::ostringstream& out);
 void build_expr(const expr* e, int indent, std::ostringstream& out);
 
 // =======================
-// helper
-// =======================
-
-std::string indent_str(int indent) {
-    return std::string(indent * 2, ' ');
-}
-
-// =======================
-// entry point
+// AST ENTRY
 // =======================
 
 std::string ast_to_string(const std::vector<std::unique_ptr<stmt>>& ast) {
@@ -87,51 +96,67 @@ std::string ast_to_string(const std::vector<std::unique_ptr<stmt>>& ast) {
     return out.str();
 }
 
+// =======================
+// STATEMENTS
+// =======================
+
 void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
     if (!s) return;
 
     std::string ind = indent_str(indent);
 
-    if (auto a = dynamic_cast<const assign_stmt*>(s)) {
-        out << ind << "assign_stmt:\n";
-        out << ind << "  name: " << a->name << "\n";
+    // ---------------- var_decl ----------------
+    if (auto v = dynamic_cast<const var_decl_stmt*>(s)) {
+        out << ind << "var_decl_stmt\n";
+        out << ind << "  name: " << v->name << "\n";
+        out << ind << "  value:\n";
+        build_expr(v->value.get(), indent + 2, out);
+    }
+
+    // ---------------- assign_stmt (IMPORTANT FIX) ----------------
+    else if (auto a = dynamic_cast<const assign_stmt*>(s)) {
+        out << ind << "assign_stmt\n";
+
+        out << ind << "  target:\n";
+        build_expr(a->target.get(), indent + 2, out);
+
         out << ind << "  value:\n";
         build_expr(a->value.get(), indent + 2, out);
     }
 
+    // ---------------- if ----------------
     else if (auto i = dynamic_cast<const if_stmt*>(s)) {
-        out << ind << "if_stmt:\n";
+        out << ind << "if_stmt\n";
 
         out << ind << "  condition:\n";
         build_expr(i->condition.get(), indent + 2, out);
 
         out << ind << "  then_block:\n";
-        for (const auto& st : i->then_block) {
+        for (const auto& st : i->then_block)
             build_stmt(st.get(), indent + 2, out);
-        }
 
         if (!i->else_block.empty()) {
             out << ind << "  else_block:\n";
-            for (const auto& st : i->else_block) {
+            for (const auto& st : i->else_block)
                 build_stmt(st.get(), indent + 2, out);
-            }
         }
     }
 
+    // ---------------- while ----------------
     else if (auto w = dynamic_cast<const while_stmt*>(s)) {
-        out << ind << "while_stmt:\n";
+        out << ind << "while_stmt\n";
 
         out << ind << "  condition:\n";
         build_expr(w->condition.get(), indent + 2, out);
 
         out << ind << "  body:\n";
-        for (const auto& st : w->body) {
+        for (const auto& st : w->body)
             build_stmt(st.get(), indent + 2, out);
-        }
     }
 
+    // ---------------- for ----------------
     else if (auto f = dynamic_cast<const for_stmt*>(s)) {
-        out << ind << "for_stmt:\n";
+        out << ind << "for_stmt\n";
 
         out << ind << "  init:\n";
         build_expr(f->init.get(), indent + 2, out);
@@ -143,15 +168,18 @@ void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
         build_expr(f->update.get(), indent + 2, out);
 
         out << ind << "  body:\n";
-        for (const auto& st : f->body) {
+        for (const auto& st : f->body)
             build_stmt(st.get(), indent + 2, out);
-        }
     }
 
     else {
-        out << ind << "unknown stmt\n";
+        out << ind << "[UNKNOWN STMT]\n";
     }
 }
+
+// =======================
+// EXPRESSIONS
+// =======================
 
 void build_expr(const expr* e, int indent, std::ostringstream& out) {
     if (!e) return;
@@ -177,13 +205,27 @@ void build_expr(const expr* e, int indent, std::ostringstream& out) {
     }
 
     else if (auto a = dynamic_cast<const assign_expr*>(e)) {
-        out << ind << "assign_expr:\n";
+        out << ind << "assign_expr\n";
         out << ind << "  name: " << a->name << "\n";
         out << ind << "  value:\n";
         build_expr(a->value.get(), indent + 2, out);
     }
 
+    else if (auto arr = dynamic_cast<const array_literal*>(e)) {
+        out << ind << "array_literal\n";
+        out << ind << "  elements:\n";
+        for (const auto& el : arr->elements)
+            build_expr(el.get(), indent + 2, out);
+    }
+
+    else if (auto acc = dynamic_cast<const array_access*>(e)) {
+        out << ind << "array_access\n";
+        out << ind << "  name: " << acc->name << "\n";
+        out << ind << "  index:\n";
+        build_expr(acc->index.get(), indent + 2, out);
+    }
+
     else {
-        out << ind << "unknown expr\n";
+        out << ind << "[UNKNOWN EXPR]\n";
     }
 }
