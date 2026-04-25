@@ -2,6 +2,7 @@
     program       -> stmt_list EOF
 
     stmt_list     -> stmt stmt_list | ε
+
     stmt          -> var_decl
                   | assign_stmt
                   | if_stmt
@@ -11,13 +12,22 @@
     var_decl      -> "integral" IDENTIFIER "=" expr ";"
                   | "integral" IDENTIFIER "=" array_literal ";"
 
-    assign_stmt   -> IDENTIFIER "=" expr ";"
-    assign_expr   -> IDENTIFIER "=" expr
+    assign_stmt   -> assign_target "=" expr ";"
+
+    assign_target -> IDENTIFIER
+                  | IDENTIFIER "[" expr "]"
+
+    assign_expr   -> IDENTIFIER "=" expr   // (used only in FOR loop header)
+
+    =========================
+    CONTROL FLOW
+    =========================
 
     if_stmt       -> "if" "(" expr ")" block else_part
     else_part     -> "else" block | ε
 
     while_stmt    -> "while" "(" expr ")" block
+
     for_stmt      -> "for" "(" assign_expr ";" expr ";" assign_expr ")" block
 
     block         -> "{" stmt_list "}"
