@@ -19,30 +19,129 @@ tokens = load_json("tokens.json")
 ast = load_json("ast.json")
 
 # =========================
-# UI
+# UI CONFIG
 # =========================
 
 st.set_page_config(page_title="Compiler Visualizer", layout="wide")
+st.title("🚀 Compiler Visualizer (Final Stable Version)")
 
-st.title("🚀 Compiler AST Visualizer (Centered & Zoomed)")
-
-tab1, tab2 = st.tabs(["Tokens", "AST Graph"])
+tab1, tab2 = st.tabs(["🎨 Tokens", "🌐 AST Graph"])
 
 # =========================
-# TOKENS VIEW
+# TOKEN COLORS
+# =========================
+
+def token_color(token_type: str):
+    colors = {
+        "KEYWORD": "#FF7043",
+        "IDENTIFIER": "#AED581",
+        "NUMBER": "#FFF176",
+        "STRING": "#4FC3F7",
+        "OPERATOR": "#BA68C8",
+        "SEPARATOR": "#90A4AE",
+        "DEFAULT": "#B0BEC5"
+    }
+    return colors.get(token_type.upper(), colors["DEFAULT"])
+
+# =========================
+# LINE BREAK RULES
+# =========================
+
+def is_line_break(val: str):
+    return val in [";", "{", "}"]
+
+# =========================
+# TOKENS VIEW (YOUR VERSION FIXED)
 # =========================
 
 with tab1:
-    st.header("Lexer Output (Tokens)")
+    st.header("🎨 Lexer Output (Clean Code View)")
 
     if not tokens:
         st.warning("No tokens loaded")
     else:
-        for i, t in enumerate(tokens):
-            st.write(f"{i} → {t.get('type')} : {t.get('value')}")
+        token_types = sorted(set(t.get("type", "UNKNOWN") for t in tokens))
+
+        selected_types = st.multiselect(
+            "Filter token types",
+            token_types,
+            default=token_types
+        )
+
+        filtered_tokens = [
+            t for t in tokens if t.get("type") in selected_types
+        ]
+
+        view_mode = st.radio(
+            "View mode",
+            ["Code View", "Table View"],
+            horizontal=True
+        )
+
+        if view_mode == "Code View":
+
+            lines = []
+            current_line = []
+
+            for t in filtered_tokens:
+                t_type = t.get("type", "UNKNOWN")
+                t_val = str(t.get("value", ""))
+
+                color = token_color(t_type)
+
+                span = f"""
+                <span title="{t_type}"
+                      style="
+                        color:{color};
+                        padding:2px 5px;
+                        margin:1px;
+                        border-radius:4px;
+                        background:rgba(255,255,255,0.04);
+                        display:inline-block;
+                      ">
+                    {t_val}
+                </span>
+                """
+
+                current_line.append(span)
+
+                if is_line_break(t_val):
+                    lines.append(" ".join(current_line))
+                    current_line = []
+
+            if current_line:
+                lines.append(" ".join(current_line))
+
+            html = """
+            <div style="
+                background:#0b0f19;
+                padding:16px;
+                border-radius:12px;
+                font-family:monospace;
+                white-space:normal;
+                line-height:2.4;
+                overflow-x:auto;
+            ">
+            """
+
+            for line in lines:
+                html += f"<div style='margin-bottom:10px; white-space:nowrap;'>{line}</div>"
+
+            html += "</div>"
+
+            components.html(html, height=500, scrolling=True)
+
+        else:
+            st.dataframe(
+                [
+                    {"index": i, "type": t.get("type"), "value": t.get("value")}
+                    for i, t in enumerate(filtered_tokens)
+                ],
+                use_container_width=True
+            )
 
 # =========================
-# COLORS
+# AST COLORS (YOUR VERSION)
 # =========================
 
 def node_color(node_type: str):
@@ -62,12 +161,12 @@ def node_color(node_type: str):
     return colors.get(node_type, colors["default"])
 
 # =========================
-# LABEL BUILDER (FIXED)
+# LABEL BUILDER (SAFE VERSION)
 # =========================
 
 def make_label(node):
     node_type = node.get("type", "node")
-    label = node_type
+    label = str(node_type)
 
     if isinstance(node.get("name"), str):
         label += f"\nname: {node['name']}"
@@ -112,7 +211,7 @@ def build_graph(G, node, parent=None, idx=None):
                         build_graph(G, item, node_id, idx)
 
 # =========================
-# RENDER AST
+# AST RENDER (CENTERED + ZOOM FIX)
 # =========================
 
 def render_ast(ast_data):
@@ -121,8 +220,6 @@ def render_ast(ast_data):
         return
 
     G = nx.DiGraph()
-
-    # ROOT = PROGRAM (center node)
     root = {"type": "program", "body": ast_data}
     build_graph(G, root)
 
@@ -134,10 +231,6 @@ def render_ast(ast_data):
         font_color="white"
     )
 
-    # =========================
-    # BETTER LAYOUT (IMPORTANT FIX)
-    # =========================
-
     net.force_atlas_2based(
         gravity=-80,
         central_gravity=0.02,
@@ -148,10 +241,6 @@ def render_ast(ast_data):
 
     net.toggle_physics(True)
 
-    # =========================
-    # ADD NODES
-    # =========================
-
     for node, data in G.nodes(data=True):
         net.add_node(
             node,
@@ -161,29 +250,11 @@ def render_ast(ast_data):
             font={"size": 13}
         )
 
-    # edges
     for src, dst in G.edges():
         net.add_edge(src, dst, color="#555")
 
-    # =========================
-    # VISIBILITY + INTERACTION FIX
-    # =========================
-
     net.set_options("""
     {
-      "nodes": {
-        "borderWidth": 1,
-        "shape": "dot",
-        "scaling": {
-          "min": 10,
-          "max": 30
-        }
-      },
-      "edges": {
-        "smooth": {
-          "type": "continuous"
-        }
-      },
       "interaction": {
         "hover": true,
         "zoomView": true,
@@ -199,26 +270,17 @@ def render_ast(ast_data):
     }
     """)
 
-    # =========================
-    # SAVE + AUTO ZOOM FIX
-    # =========================
+    net.save_graph("ast.html")
 
-    net.save_graph("ast_clean.html")
-
-    # inject auto-fit + center view (IMPORTANT FIX)
-    with open("ast_clean.html", "r", encoding="utf-8") as f:
+    with open("ast.html", "r", encoding="utf-8") as f:
         html = f.read()
 
+    # AUTO CENTER FIX
     html += """
     <script>
         setTimeout(() => {
-            network.fit({
-                animation: true
-            });
-            network.moveTo({
-                scale: 0.8,
-                position: {x: 0, y: 0}
-            });
+            network.fit({ animation: true });
+            network.moveTo({ scale: 0.9, position: {x: 0, y: 0} });
         }, 500);
     </script>
     """
@@ -226,13 +288,11 @@ def render_ast(ast_data):
     components.html(html, height=850, scrolling=True)
 
 # =========================
-# TAB VIEW
+# AST TAB
 # =========================
 
 with tab2:
-    st.header("AST Graph (Centered & Fully Visible)")
-    st.caption("Root is centered, zoom is auto-adjusted to fit full graph")
-
+    st.header("🌐 AST Graph (Centered & Zoomed)")
     render_ast(ast)
 
-st.success("AST visualizer ready 🚀")
+st.success("Compiler Visualizer Ready 🚀")
