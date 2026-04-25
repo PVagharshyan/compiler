@@ -43,7 +43,6 @@ void interpreter::set_variable(const std::string& name, const value& val) {
         }
     }
 
-    // ❌ DO NOT create variable implicitly
     throw std::runtime_error("Assignment to undefined variable: " + name);
 }
 

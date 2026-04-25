@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 
 // =======================
 // TOKEN PRINTING
@@ -63,12 +64,11 @@ std::string printTokensToString(const std::vector<Token>& tokens) {
     }
 
     oss << "----------------------------------------\n";
-
     return oss.str();
 }
 
 // =======================
-// AST HELPERS
+// AST HELPERS (PRINT)
 // =======================
 
 static std::string indent_str(int indent) {
@@ -92,12 +92,11 @@ std::string ast_to_string(const std::vector<std::unique_ptr<stmt>>& ast) {
     }
 
     out << "===============\n";
-
     return out.str();
 }
 
 // =======================
-// STATEMENTS
+// STATEMENTS (DEBUG PRINT)
 // =======================
 
 void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
@@ -105,7 +104,6 @@ void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
 
     std::string ind = indent_str(indent);
 
-    // ---------------- var_decl ----------------
     if (auto v = dynamic_cast<const var_decl_stmt*>(s)) {
         out << ind << "var_decl_stmt\n";
         out << ind << "  name: " << v->name << "\n";
@@ -113,7 +111,6 @@ void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
         build_expr(v->value.get(), indent + 2, out);
     }
 
-    // ---------------- assign_stmt (IMPORTANT FIX) ----------------
     else if (auto a = dynamic_cast<const assign_stmt*>(s)) {
         out << ind << "assign_stmt\n";
 
@@ -124,7 +121,6 @@ void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
         build_expr(a->value.get(), indent + 2, out);
     }
 
-    // ---------------- if ----------------
     else if (auto i = dynamic_cast<const if_stmt*>(s)) {
         out << ind << "if_stmt\n";
 
@@ -142,7 +138,6 @@ void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
         }
     }
 
-    // ---------------- while ----------------
     else if (auto w = dynamic_cast<const while_stmt*>(s)) {
         out << ind << "while_stmt\n";
 
@@ -154,7 +149,6 @@ void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
             build_stmt(st.get(), indent + 2, out);
     }
 
-    // ---------------- for ----------------
     else if (auto f = dynamic_cast<const for_stmt*>(s)) {
         out << ind << "for_stmt\n";
 
@@ -178,7 +172,7 @@ void build_stmt(const stmt* s, int indent, std::ostringstream& out) {
 }
 
 // =======================
-// EXPRESSIONS
+// EXPRESSIONS (DEBUG PRINT)
 // =======================
 
 void build_expr(const expr* e, int indent, std::ostringstream& out) {
@@ -228,4 +222,157 @@ void build_expr(const expr* e, int indent, std::ostringstream& out) {
     else {
         out << ind << "[UNKNOWN EXPR]\n";
     }
+}
+
+// =====================================================
+// 🚀 JSON EXPORT (FOR PYTHON VISUALIZER)
+// =====================================================
+
+static void exprToJSON(const expr* e, std::ostream& out);
+static void stmtToJSON(const stmt* s, std::ostream& out);
+
+// ---------------- EXPRESSIONS ----------------
+
+static void exprToJSON(const expr* e, std::ostream& out) {
+
+    if (auto n = dynamic_cast<const number*>(e)) {
+        out << "{ \"type\": \"number\", \"value\": " << n->value << " }";
+    }
+
+    else if (auto id = dynamic_cast<const identifier*>(e)) {
+        out << "{ \"type\": \"identifier\", \"name\": \"" << id->name << "\" }";
+    }
+
+    else if (auto b = dynamic_cast<const binary_expr*>(e)) {
+        out << "{ \"type\": \"binary\", \"op\": \"" << b->op << "\", \"left\": ";
+        exprToJSON(b->left.get(), out);
+        out << ", \"right\": ";
+        exprToJSON(b->right.get(), out);
+        out << " }";
+    }
+
+    else if (auto arr = dynamic_cast<const array_literal*>(e)) {
+        out << "{ \"type\": \"array\", \"elements\": [";
+        for (size_t i = 0; i < arr->elements.size(); i++) {
+            exprToJSON(arr->elements[i].get(), out);
+            if (i + 1 < arr->elements.size()) out << ",";
+        }
+        out << "] }";
+    }
+
+    else if (auto acc = dynamic_cast<const array_access*>(e)) {
+        out << "{ \"type\": \"array_access\", \"name\": \"" << acc->name << "\", \"index\": ";
+        exprToJSON(acc->index.get(), out);
+        out << " }";
+    }
+
+    else {
+        out << "{ \"type\": \"unknown_expr\" }";
+    }
+}
+
+// ---------------- STATEMENTS ----------------
+
+static void stmtToJSON(const stmt* s, std::ostream& out) {
+
+    if (auto v = dynamic_cast<const var_decl_stmt*>(s)) {
+        out << "{ \"type\": \"var_decl\", \"name\": \"" << v->name << "\", \"value\": ";
+        exprToJSON(v->value.get(), out);
+        out << " }";
+    }
+
+    else if (auto a = dynamic_cast<const assign_stmt*>(s)) {
+        out << "{ \"type\": \"assign_stmt\", \"target\": ";
+        exprToJSON(a->target.get(), out);
+        out << ", \"value\": ";
+        exprToJSON(a->value.get(), out);
+        out << " }";
+    }
+
+    else if (auto i = dynamic_cast<const if_stmt*>(s)) {
+        out << "{ \"type\": \"if\", \"condition\": ";
+        exprToJSON(i->condition.get(), out);
+
+        out << ", \"then\": [";
+        for (size_t k = 0; k < i->then_block.size(); k++) {
+            stmtToJSON(i->then_block[k].get(), out);
+            if (k + 1 < i->then_block.size()) out << ",";
+        }
+
+        out << "], \"else\": [";
+        for (size_t k = 0; k < i->else_block.size(); k++) {
+            stmtToJSON(i->else_block[k].get(), out);
+            if (k + 1 < i->else_block.size()) out << ",";
+        }
+
+        out << "] }";
+    }
+
+    else if (auto w = dynamic_cast<const while_stmt*>(s)) {
+        out << "{ \"type\": \"while\", \"condition\": ";
+        exprToJSON(w->condition.get(), out);
+
+        out << ", \"body\": [";
+        for (size_t k = 0; k < w->body.size(); k++) {
+            stmtToJSON(w->body[k].get(), out);
+            if (k + 1 < w->body.size()) out << ",";
+        }
+
+        out << "] }";
+    }
+
+    else if (auto f = dynamic_cast<const for_stmt*>(s)) {
+        out << "{ \"type\": \"for\", \"init\": ";
+        exprToJSON(f->init.get(), out);
+
+        out << ", \"condition\": ";
+        exprToJSON(f->condition.get(), out);
+
+        out << ", \"update\": ";
+        exprToJSON(f->update.get(), out);
+
+        out << ", \"body\": [";
+        for (size_t k = 0; k < f->body.size(); k++) {
+            stmtToJSON(f->body[k].get(), out);
+            if (k + 1 < f->body.size()) out << ",";
+        }
+
+        out << "] }";
+    }
+
+    else {
+        out << "{ \"type\": \"unknown_stmt\" }";
+    }
+}
+
+// =====================================================
+// EXPORT FUNCTIONS
+// =====================================================
+
+void exportASTJSON(const std::vector<std::unique_ptr<stmt>>& ast, const std::string& file) {
+    std::ofstream out(file);
+
+    out << "[\n";
+    for (size_t i = 0; i < ast.size(); i++) {
+        stmtToJSON(ast[i].get(), out);
+        if (i + 1 < ast.size()) out << ",";
+        out << "\n";
+    }
+    out << "]\n";
+}
+
+void exportTokensJSON(const std::vector<Token>& tokens, const std::string& file) {
+    std::ofstream out(file);
+
+    out << "[\n";
+    for (size_t i = 0; i < tokens.size(); i++) {
+        out << "  {\n";
+        out << "    \"type\": \"" << tokenTypeToString(tokens[i].type) << "\",\n";
+        out << "    \"value\": \"" << tokens[i].value << "\"\n";
+        out << "  }";
+
+        if (i + 1 < tokens.size()) out << ",";
+        out << "\n";
+    }
+    out << "]\n";
 }

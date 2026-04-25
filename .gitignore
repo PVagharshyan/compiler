@@ -1,2 +1,6 @@
 run/build/*.o
 run/compiler
+run/.venv
+run/*.json
+run/*.html
+run/lib/

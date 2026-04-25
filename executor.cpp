@@ -8,6 +8,7 @@
 #include "interpreter.hpp"
 
 #include <iostream>
+#include <fstream>
 
 void executor::run(const std::string& code) {
 
@@ -19,6 +20,7 @@ void executor::run(const std::string& code) {
     // =========================
     // 1. LEXER PHASE
     // =========================
+
     lexer lex(code);
     scope_tracker scp_tracker;
 
@@ -46,7 +48,9 @@ void executor::run(const std::string& code) {
 
     LOGGER.info(printTokensToString(tokens), 2);
 
-    // ❗ stop if lexer failed
+    exportTokensJSON(tokens, "tokens.json");
+
+    // stop if lexer failed
     if (has_lex_error) {
         std::cout << "\nLog:\n";
         LOGGER.print();
@@ -60,7 +64,7 @@ void executor::run(const std::string& code) {
     bool parse_ok = true;
 
     try {
-        lexer lex2(code);   // fresh lexer
+        lexer lex2(code);
         parser p(lex2);
 
         ast = p.program();
@@ -72,7 +76,8 @@ void executor::run(const std::string& code) {
 
     LOGGER.info(ast_to_string(ast), 2);
 
-    // ❗ stop if parser failed
+    exportASTJSON(ast, "ast.json");
+
     if (!parse_ok) {
         std::cout << "\nLog:\n";
         LOGGER.print();
@@ -81,16 +86,18 @@ void executor::run(const std::string& code) {
     }
 
     // =========================
-    // 3. INTERPRETER PHASE (NEW)
+    // 3. INTERPRETER PHASE
     // =========================
+
     try {
         interpreter interp;
 
         interp.run(ast);
 
-        // reuse dump logic manually (since dump prints to cout)
-        // better design would return string, but keeping simple
         interp.dump_variables();
+
+        // (FUTURE) execution trace export
+        // exportTraceJSON(...);
 
     }
     catch (const std::exception& e) {
@@ -98,8 +105,9 @@ void executor::run(const std::string& code) {
     }
 
     // =========================
-    // OUTPUT
+    // OUTPUT LOGS
     // =========================
+
     std::cout << "\nLog:\n";
     LOGGER.print();
     LOGGER.clear();
