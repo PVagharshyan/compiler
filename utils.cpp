@@ -225,7 +225,7 @@ void build_expr(const expr* e, int indent, std::ostringstream& out) {
 }
 
 // =====================================================
-// 🚀 JSON EXPORT (FOR PYTHON VISUALIZER)
+// JSON EXPORT (FOR PYTHON VISUALIZER)
 // =====================================================
 
 static void exprToJSON(const expr* e, std::ostream& out);

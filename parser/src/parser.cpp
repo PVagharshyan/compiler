@@ -104,7 +104,7 @@ std::unique_ptr<stmt> parser::var_decl_rule() {
 }
 
 // =======================
-// lvalue (NEW)
+// lvalue
 // =======================
 
 std::unique_ptr<expr> parser::lvalue_rule() {
@@ -127,7 +127,7 @@ std::unique_ptr<expr> parser::lvalue_rule() {
 }
 
 // =======================
-// assign_stmt (FIXED)
+// assign_stmt
 // =======================
 
 std::unique_ptr<stmt> parser::assign_stmt_rule() {
@@ -146,7 +146,7 @@ std::unique_ptr<stmt> parser::assign_stmt_rule() {
 }
 
 // =======================
-// assign_expr (FIXED)
+// assign_expr
 // =======================
 
 std::unique_ptr<assign_expr> parser::assign_expr_rule() {

@@ -52,8 +52,6 @@ void lexer::initOperatorAutomaton() {
 
     addOperator("&&", TokenType::Operator);
     addOperator("||", TokenType::Operator);
-    // addOperator("<<", TokenType::Operator);
-    // addOperator("<<=", TokenType::Operator);
 }
 
 // -------------------- CTOR --------------------

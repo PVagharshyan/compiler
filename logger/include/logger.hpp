@@ -10,7 +10,7 @@ class logger {
 
     unsigned int requiredVerbosity = 4;
 
-    logger() = default; // private constructor
+    logger() = default;
 
 public:
     logger(const logger&) = delete;

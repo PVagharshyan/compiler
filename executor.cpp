@@ -96,9 +96,6 @@ void executor::run(const std::string& code) {
 
         interp.dump_variables();
 
-        // (FUTURE) execution trace export
-        // exportTraceJSON(...);
-
     }
     catch (const std::exception& e) {
         LOGGER.error(std::string("Runtime error: ") + e.what());

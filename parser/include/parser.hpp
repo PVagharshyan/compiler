@@ -62,9 +62,4 @@ public:
     std::unique_ptr<expr> factor();
 
     std::unique_ptr<expr> lvalue_rule();
-    // =======================
-    // (optional future extension)
-    // =======================
-    // std::unique_ptr<expr> array_access_rule();
-    // std::unique_ptr<expr> array_literal_rule();
 };

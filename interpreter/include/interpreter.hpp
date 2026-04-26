@@ -32,7 +32,6 @@ private:
 
     value eval_expr(const expr* e);
 
-    // NEW: array mutation helper
     void set_array_element(const std::string& name, int index, int value);
 
 public:
