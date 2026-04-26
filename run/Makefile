@@ -5,9 +5,16 @@ TARGET := compiler
 
 PROJECT_DIR := ..
 BUILD_DIR   := build
+RUN_DIR     := $(PROJECT_DIR)/run
 
 # =========================
-# PYTHON ENV (AUTO)
+# REQUIRED INPUT (STRICT)
+# =========================
+
+FILE_PATH ?=
+
+# =========================
+# PYTHON ENV
 # =========================
 
 VENV_DIR := .venv
@@ -25,10 +32,10 @@ LOGGER_DIR       := $(PROJECT_DIR)/logger
 PARSER_DIR       := $(PROJECT_DIR)/parser
 INTERPRETER_DIR  := $(PROJECT_DIR)/interpreter
 
-LEXER_SRCS    := $(wildcard $(LEXER_DIR)/src/*.cpp)
-LOGGER_SRCS   := $(wildcard $(LOGGER_DIR)/src/*.cpp)
-PARSER_SRCS   := $(wildcard $(PARSER_DIR)/src/*.cpp)
-INTERPRETER_SRCS := $(wildcard $(INTERPRETER_DIR)/src/*.cpp)
+LEXER_SRCS        := $(wildcard $(LEXER_DIR)/src/*.cpp)
+LOGGER_SRCS       := $(wildcard $(LOGGER_DIR)/src/*.cpp)
+PARSER_SRCS       := $(wildcard $(PARSER_DIR)/src/*.cpp)
+INTERPRETER_SRCS  := $(wildcard $(INTERPRETER_DIR)/src/*.cpp)
 
 INCDIRS := -I$(LEXER_DIR)/include \
            -I$(LOGGER_DIR)/include \
@@ -49,7 +56,7 @@ OBJS := $(BUILD_DIR)/main.o \
         $(INTERPRETER_SRCS:$(INTERPRETER_DIR)/src/%.cpp=$(BUILD_DIR)/interpreter_%.o)
 
 # =========================
-# DEFAULT BUILD
+# BUILD RULES
 # =========================
 
 .PHONY: all
@@ -79,7 +86,7 @@ $(BUILD_DIR)/interpreter_%.o: $(INTERPRETER_DIR)/src/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCDIRS) -c $< -o $@
 
 # =========================
-# 🚀 PYTHON ENV SETUP (FIXED)
+# PYTHON ENV
 # =========================
 
 .PHONY: setup
@@ -96,7 +103,7 @@ setup:
 	@echo "Setup complete."
 
 # =========================
-# 🚀 USER COMMANDS
+# BUILD
 # =========================
 
 .PHONY: build
@@ -104,18 +111,78 @@ build:
 	@echo "Building compiler..."
 	$(MAKE) all
 
+# =========================
+# RUN ALL TEST CASES
+# =========================
+
+.PHONY: run_all
+run_all: build
+	@echo "Running ALL test cases..."
+
+	@if [ ! -d "$(RUN_DIR)/code_examples_for_testing" ]; then \
+		echo "ERROR: Test directory not found: $(RUN_DIR)/code_examples_for_testing"; \
+		exit 1; \
+	fi
+
+	@for file in $(RUN_DIR)/code_examples_for_testing/*; do \
+		if [ -f $$file ]; then \
+			echo "======================================"; \
+			echo "Running: $$file"; \
+			echo "======================================"; \
+			./$(TARGET) -v 2 $$file; \
+		fi \
+	done
+
+	@rm -rf ast.json tokens.json
+
+STATE_FILE := .last_run_state
+
+# =========================
+# RUN SINGLE FILE (STRICT)
+# =========================
+
 .PHONY: run
 run: build
-	@echo "Running compiler..."
-	./$(TARGET)
+	@if [ -z "$(FILE_PATH)" ]; then \
+		echo "ERROR: FILE_PATH is not set."; \
+		echo "Usage: make run FILE_PATH=run/code_examples_for_testing/file.lang"; \
+		exit 1; \
+	fi
+
+	@if [ ! -f "$(FILE_PATH)" ]; then \
+		echo "ERROR: File not found: $(FILE_PATH)"; \
+		exit 1; \
+	fi
+
+	@echo "======================================"
+	@echo "Running single file: $(FILE_PATH)"
+	@echo "======================================"
+
+	./$(TARGET) -v 2 $(FILE_PATH)
+
+	@echo "$(FILE_PATH)" > $(STATE_FILE)
+
+	@$(MAKE) view
+
+# =========================
+# VISUALIZER (ONLY AFTER RUN)
+# =========================
 
 .PHONY: view
-view: setup
+view:
+	@if [ ! -f "$(STATE_FILE)" ]; then \
+		echo "ERROR: No execution detected."; \
+		echo "You must run the compiler first using: make run FILE_PATH=..."; \
+		exit 1; \
+	fi
+
+	@rm -f $(STATE_FILE)
+
+	@echo "Setup python libs..."
+	@$(MAKE) setup
+
 	@echo "Launching visualizer..."
 	$(PYTHON) -m streamlit run $(VISUALIZER)
-
-.PHONY: allinone
-allinone: run view
 
 # =========================
 # CLEAN
