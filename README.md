@@ -1,158 +1,219 @@
-# 🧠 Custom Compiler + AST Visualizer Pipeline
+# 🧠 Compiler + Interpreter + AST Visualizer Build System
 
-This project is a modular **C++ compiler/interpreter pipeline** with an integrated **Python-based AST visualizer** built using Streamlit, NetworkX, and PyVis.
+This project is a modular **C++ compiler pipeline** combined with a **Python-based AST visualization system**.
 
-It supports:
-- Lexical analysis (lexer)
-- Parsing (parser)
-- Interpretation/execution (interpreter)
-- Logging system
-- AST + token generation
-- Interactive visualization of AST and execution flow
-- Automated test execution system
-
----
-
-# 📁 Project Structure
-
-
-.
-├── lexer/
-├── parser/
-├── interpreter/
-├── logger/
-├── run/
-│ └── code_examples_for_testing/
-├── visualize.py
-├── Makefile
-└── build/
-
+It includes:
+- Lexer (tokenization)
+- Parser (AST construction)
+- Interpreter (execution engine)
+- Logger system
+- Automated test runner
+- Streamlit + PyVis AST visualizer
 
 ---
 
-# ⚙️ Requirements
+# ⚙️ Configuration Variables
 
-## System Requirements
-- g++ (with C++17 support)
-- make
-- python3
-- python3-venv
-
-## Python dependencies (auto-installed via `make setup`)
-- streamlit
-- networkx
-- matplotlib
-- pyvis
+## Compiler Settings
+- `CXX := g++` → C++ compiler
+- `CXXFLAGS := -std=c++17 -Wall -Wextra -O2` → compilation flags
+- `TARGET := compiler` → output binary name
 
 ---
 
-# 🚀 Build Instructions
+## Project Structure
+- `PROJECT_DIR := ..` → root project directory
+- `BUILD_DIR := build` → compiled object files
+- `RUN_DIR := run` → test execution directory
 
-### 🔧 Build the compiler
-```bash
-make build
+---
 
-or simply:
+## Required Input
+- `FILE_PATH` → required input file for single execution mode
 
-make
-▶️ Running the Compiler
-Run a single file (STRICT MODE)
-make run FILE_PATH=run/code_examples_for_testing/your_file.lang
-What happens:
-Builds the compiler
-Runs the selected file
-Generates ast.json and tokens.json
-Automatically launches visualizer
-Run all test cases
-make run_all
-What happens:
-Builds compiler
+---
 
-Runs all files in:
+## Python Environment
+- `VENV_DIR := .venv` → virtual environment folder
+- `PYTHON := .venv/bin/python` → Python interpreter
+- `PIP := .venv/bin/pip` → package manager
+- `VISUALIZER := visualize.py` → Streamlit AST visualizer
+
+---
+
+# 📦 Source Modules
+
+## Compiler Components
+- Lexer → `lexer/src/*.cpp`
+- Parser → `parser/src/*.cpp`
+- Interpreter → `interpreter/src/*.cpp`
+- Logger → `logger/src/*.cpp`
+
+## Include Paths
+- lexer/include
+- parser/include
+- interpreter/include
+- logger/include
+- project root
+
+---
+
+# 🧱 Build System
+
+## Object Compilation Strategy
+Each module is compiled into:
+- `build/*.o` object files
+- Separate object naming per module:
+  - lexer_*.o
+  - parser_*.o
+  - interpreter_*.o
+  - logger_*.o
+
+---
+
+## Main Build Target
+
+all → builds the full compiler
+
+compiler → links all object files into final executable
+
+---
+
+# 🧪 Python Environment Setup
+
+setup → creates visualization environment
+
+Steps:
+- Create `.venv`
+- Upgrade pip
+- Install:
+  - streamlit
+  - networkx
+  - matplotlib
+  - pyvis
+
+---
+
+# 🚀 Build Commands
+
+## Build project
+build → compiles full compiler system
+
+---
+
+## Run all test cases
+run_all → executes all files in:
 
 run/code_examples_for_testing/
-Executes each file with verbose mode
-Cleans generated JSON files after execution
-📊 AST Visualizer
 
-After running a file, the visualizer is automatically launched:
+Behavior:
+- Builds compiler
+- Runs each test file
+- Prints execution logs
+- Removes:
+  - ast.json
+  - tokens.json
 
-make view
+---
+
+## Run single file
+
+run FILE_PATH=... → strict execution mode
+
+Behavior:
+- Validates FILE_PATH
+- Builds compiler
+- Runs selected file with verbose mode (-v 2)
+- Saves execution state
+- Launches visualizer automatically
+
+---
+
+# 📊 AST Visualizer System
+
+view → launches interactive AST visualizer
+
+Behavior:
+- Requires previous execution state
+- Auto-installs Python dependencies if missing
+- Starts Streamlit server:
+  - visualize.py
+
 Features:
-Interactive AST graph
-Zoom / pan support
-Node exploration
-Streamlit-based UI
-PyVis network rendering
-🧪 Python Environment Setup
+- Interactive graph exploration
+- Zoom and pan
+- Node-level inspection
+- PyVis network rendering
 
-If needed manually:
+---
 
-make setup
+# 🧹 Clean System
 
-This will:
+clean → resets entire project state
 
-Create .venv
-Upgrade pip
-Install required Python libraries
-🧹 Clean Project
+Removes:
+- build/
+- compiler binary
+- all .json outputs
+- Python venv (.venv)
+- Streamlit cache (.streamlit)
+- Python cache (__pycache__)
+- HTML outputs
+- lib folder
 
-Remove all generated files:
+---
 
-make clean
+# 🔄 Execution Workflow
 
-This deletes:
-
-build files
-compiled binary
-JSON outputs
-Python cache
-virtual environment
-Streamlit cache
-📦 Build Outputs
-
-After compilation:
-
-compiler → executable binary
-build/ → object files
-ast.json → AST output
-tokens.json → lexer output
-🧠 Workflow Overview
 Source Code (.lang)
         ↓
       Lexer
         ↓
-     Parser
+      Parser
         ↓
-  Interpreter
+   Interpreter
         ↓
  AST + Tokens (JSON)
         ↓
  Python Visualizer (Streamlit + PyVis)
-⚠️ Important Notes
-FILE_PATH is required for make run
-
-run_all assumes test files exist in:
-
-run/code_examples_for_testing/
-Visualizer only launches after a successful run
-🛠 Example Usage
-make build
-make run FILE_PATH=run/code_examples_for_testing/test1.lang
-make run_all
-make clean
-📌 Author Notes
-
-This system is designed for:
-
-Compiler design learning
-AST visualization
-Language processing experiments
-Educational use in parsing/interpreting pipelines
 
 ---
 
-If you want, I can also:
-- :contentReference[oaicite:0]{index=0}
-- :contentReference[oaicite:1]{index=1}
-- or :contentReference[oaicite:2]{index=2}
+# ⚠️ Important Rules
+
+- FILE_PATH is mandatory for `run`
+- `run_all` requires valid test directory:
+  run/code_examples_for_testing/
+- Visualizer only works after successful execution
+- Previous run state is stored in `.last_run_state`
+
+---
+
+# 🛠 Example Usage
+
+build system:
+make build
+
+run single file:
+make run FILE_PATH=run/code_examples_for_testing/test.lang
+
+run all tests:
+make run_all
+
+launch visualizer:
+make view
+
+clean project:
+make clean
+
+---
+
+# 📌 Summary
+
+This Makefile automates:
+- Full C++ compiler build system
+- Modular compilation of compiler components
+- Automated test execution
+- AST generation
+- Python-based visualization system
+- Clean project lifecycle management
