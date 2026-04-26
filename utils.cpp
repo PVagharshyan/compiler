@@ -266,6 +266,12 @@ static void exprToJSON(const expr* e, std::ostream& out) {
         out << " }";
     }
 
+    else if (auto as = dynamic_cast<const assign_expr*>(e)) {
+        out << "{ \"type\": \"assign_expr\", \"name\": \"" << as->name << "\", \"value\": ";
+        exprToJSON(as->value.get(), out);
+        out << " }";
+    }
+
     else {
         out << "{ \"type\": \"unknown_expr\" }";
     }
