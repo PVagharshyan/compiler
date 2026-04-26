@@ -23,7 +23,7 @@ ast = load_json("ast.json")
 # =========================
 
 st.set_page_config(page_title="Compiler Visualizer", layout="wide")
-st.title("🚀 Compiler Visualizer (Final Stable Version)")
+st.title("🚀 Compiler Visualizer (Search Enabled AST)")
 
 tab1, tab2 = st.tabs(["🎨 Tokens", "🌐 AST Graph"])
 
@@ -43,19 +43,15 @@ def token_color(token_type: str):
     }
     return colors.get(token_type.upper(), colors["DEFAULT"])
 
-# =========================
-# LINE BREAK RULES
-# =========================
-
 def is_line_break(val: str):
     return val in [";", "{", "}"]
 
 # =========================
-# TOKENS VIEW (YOUR VERSION FIXED)
+# TOKENS VIEW
 # =========================
 
 with tab1:
-    st.header("🎨 Lexer Output (Clean Code View)")
+    st.header("🎨 Lexer Output")
 
     if not tokens:
         st.warning("No tokens loaded")
@@ -141,7 +137,7 @@ with tab1:
             )
 
 # =========================
-# AST COLORS (YOUR VERSION)
+# AST COLORS
 # =========================
 
 def node_color(node_type: str):
@@ -161,21 +157,16 @@ def node_color(node_type: str):
     return colors.get(node_type, colors["default"])
 
 # =========================
-# LABEL BUILDER (SAFE VERSION)
+# LABEL BUILDER
 # =========================
 
 def make_label(node):
     node_type = node.get("type", "node")
     label = str(node_type)
 
-    if isinstance(node.get("name"), str):
-        label += f"\nname: {node['name']}"
-
-    if isinstance(node.get("value"), (str, int, float)):
-        label += f"\nvalue: {node['value']}"
-
-    if isinstance(node.get("op"), str):
-        label += f"\nop: {node['op']}"
+    for k in ["name", "value", "op"]:
+        if isinstance(node.get(k), (str, int, float)):
+            label += f"\n{k}: {node[k]}"
 
     return label
 
@@ -211,13 +202,15 @@ def build_graph(G, node, parent=None, idx=None):
                         build_graph(G, item, node_id, idx)
 
 # =========================
-# AST RENDER (CENTERED + ZOOM FIX)
+# AST RENDER WITH SEARCH
 # =========================
 
 def render_ast(ast_data):
     if not ast_data:
         st.warning("No AST loaded")
         return
+
+    search_query = st.text_input("🔍 Search AST (type, name, value, op)", "")
 
     G = nx.DiGraph()
     root = {"type": "program", "body": ast_data}
@@ -246,8 +239,7 @@ def render_ast(ast_data):
             node,
             label=data.get("label", ""),
             color=data.get("color", "#ccc"),
-            size=18,
-            font={"size": 13}
+            size=16
         )
 
     for src, dst in G.edges():
@@ -260,12 +252,6 @@ def render_ast(ast_data):
         "zoomView": true,
         "dragView": true,
         "navigationButtons": true
-      },
-      "physics": {
-        "enabled": true,
-        "stabilization": {
-          "iterations": 200
-        }
       }
     }
     """)
@@ -275,13 +261,55 @@ def render_ast(ast_data):
     with open("ast.html", "r", encoding="utf-8") as f:
         html = f.read()
 
-    # AUTO CENTER FIX
-    html += """
+    # =========================
+    # SEARCH + HIGHLIGHT JS
+    # =========================
+
+    html += f"""
     <script>
-        setTimeout(() => {
-            network.fit({ animation: true });
-            network.moveTo({ scale: 0.9, position: {x: 0, y: 0} });
-        }, 500);
+
+    const search = "{search_query}".toLowerCase();
+
+    function match(label) {{
+        return label.toLowerCase().includes(search);
+    }}
+
+    setTimeout(() => {{
+
+        if (search.length === 0) return;
+
+        let nodes = network.body.data.nodes.get();
+        let found = [];
+
+        nodes.forEach(n => {{
+            let label = n.label || "";
+
+            if (match(label)) {{
+                found.push(n.id);
+
+                network.body.data.nodes.update({{
+                    id: n.id,
+                    color: "#FFD54F",
+                    size: 25,
+                    font: {{ color: "#000" }}
+                }});
+            }} else {{
+                network.body.data.nodes.update({{
+                    id: n.id,
+                    color: "rgba(150,150,150,0.15)"
+                }});
+            }}
+        }});
+
+        if (found.length > 0) {{
+            network.focus(found[0], {{
+                scale: 1.3,
+                animation: true
+            }});
+        }}
+
+    }}, 700);
+
     </script>
     """
 
@@ -292,7 +320,7 @@ def render_ast(ast_data):
 # =========================
 
 with tab2:
-    st.header("🌐 AST Graph (Centered & Zoomed)")
+    st.header("🌐 AST Graph (Search Enabled)")
     render_ast(ast)
 
-st.success("Compiler Visualizer Ready 🚀")
+st.success("🚀 Ready: Tokens + AST Search Enabled")
