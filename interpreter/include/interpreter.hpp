@@ -24,7 +24,6 @@ private:
 
     // ---------- helpers ----------
     int as_int(const value& v);
-    std::vector<int> as_array(const value& v);
 
     // ---------- execution ----------
     void exec_stmt(const stmt* s);

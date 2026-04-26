@@ -33,7 +33,6 @@ value interpreter::get_variable(const std::string& name) {
     throw std::runtime_error("Undefined variable: " + name);
 }
 
-// IMPORTANT: STRICT assignment (NO auto creation)
 void interpreter::set_variable(const std::string& name, const value& val) {
     for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
         auto found = it->find(name);
@@ -42,7 +41,6 @@ void interpreter::set_variable(const std::string& name, const value& val) {
             return;
         }
     }
-
     throw std::runtime_error("Assignment to undefined variable: " + name);
 }
 
@@ -79,7 +77,7 @@ void interpreter::set_array_element(const std::string& name, int index, int new_
 
 void interpreter::run(const std::vector<std::unique_ptr<stmt>>& ast) {
     scopes.clear();
-    scopes.emplace_back(); // global scope
+    scopes.emplace_back();
 
     for (const auto& s : ast) {
         exec_stmt(s.get());
@@ -102,9 +100,6 @@ void interpreter::exec_block(const std::vector<std::unique_ptr<stmt>>& block) {
 
 void interpreter::exec_stmt(const stmt* s) {
 
-    // -------------------------
-    // var declaration (ONLY way to create variable)
-    // -------------------------
     if (auto v = dynamic_cast<const var_decl_stmt*>(s)) {
         auto& cur = scopes.back();
 
@@ -115,12 +110,8 @@ void interpreter::exec_stmt(const stmt* s) {
         cur[v->name] = eval_expr(v->value.get());
     }
 
-    // -------------------------
-    // assignment OR array assignment
-    // -------------------------
     else if (auto a = dynamic_cast<const assign_stmt*>(s)) {
 
-        // a[i] = x
         if (auto acc = dynamic_cast<const array_access*>(a->target.get())) {
             int idx = as_int(eval_expr(acc->index.get()));
             int val = as_int(eval_expr(a->value.get()));
@@ -128,7 +119,6 @@ void interpreter::exec_stmt(const stmt* s) {
             return;
         }
 
-        // x = value
         if (auto id = dynamic_cast<const identifier*>(a->target.get())) {
             set_variable(id->name, eval_expr(a->value.get()));
             return;
@@ -180,13 +170,6 @@ int interpreter::as_int(const value& v) {
     return std::get<int>(v);
 }
 
-std::vector<int> interpreter::as_array(const value& v) {
-    if (!std::holds_alternative<std::vector<int>>(v)) {
-        throw std::runtime_error("Expected array");
-    }
-    return std::get<std::vector<int>>(v);
-}
-
 value interpreter::eval_expr(const expr* e) {
 
     if (auto n = dynamic_cast<const number*>(e)) {
@@ -198,6 +181,18 @@ value interpreter::eval_expr(const expr* e) {
     }
 
     else if (auto b = dynamic_cast<const binary_expr*>(e)) {
+
+        if (b->op == "&&") {
+            int l = as_int(eval_expr(b->left.get()));
+            if (!l) return 0; // short-circuit
+            return as_int(eval_expr(b->right.get())) ? 1 : 0;
+        }
+
+        if (b->op == "||") {
+            int l = as_int(eval_expr(b->left.get()));
+            if (l) return 1; // short-circuit
+            return as_int(eval_expr(b->right.get())) ? 1 : 0;
+        }
 
         int l = as_int(eval_expr(b->left.get()));
         int r = as_int(eval_expr(b->right.get()));
@@ -213,9 +208,6 @@ value interpreter::eval_expr(const expr* e) {
         if (b->op == "<=") return l <= r;
         if (b->op == ">") return l > r;
         if (b->op == ">=") return l >= r;
-
-        if (b->op == "&&") return l && r;
-        if (b->op == "||") return l || r;
 
         throw std::runtime_error("Unknown operator: " + b->op);
     }

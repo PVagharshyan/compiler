@@ -19,10 +19,6 @@
 
     assign_expr   -> IDENTIFIER "=" expr   // (used only in FOR loop header)
 
-    =========================
-    CONTROL FLOW
-    =========================
-
     if_stmt       -> "if" "(" expr ")" block else_part
     else_part     -> "else" block | ε
 
