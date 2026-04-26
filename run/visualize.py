@@ -74,6 +74,10 @@ with tab1:
             horizontal=True
         )
 
+        # =========================
+        # CODE VIEW (WITH IMAGE EXPORT)
+        # =========================
+
         if view_mode == "Code View":
 
             lines = []
@@ -108,24 +112,65 @@ with tab1:
             if current_line:
                 lines.append(" ".join(current_line))
 
-            html = """
-            <div style="
-                background:#0b0f19;
-                padding:16px;
-                border-radius:12px;
-                font-family:monospace;
-                white-space:normal;
-                line-height:2.4;
-                overflow-x:auto;
-            ">
+            code_html = ""
+            for line in lines:
+                code_html += f"<div class='line'>{line}</div>"
+
+            html = f"""
+            <html>
+            <head>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+            </head>
+
+            <body style="background:#0b0f19; margin:0; padding:10px;">
+
+            <button onclick="saveImage()"
+                style="
+                    position:fixed;
+                    top:10px;
+                    right:10px;
+                    padding:10px 15px;
+                    border:none;
+                    border-radius:8px;
+                    cursor:pointer;
+                    background:#4FC3F7;
+                    color:black;
+                    font-weight:bold;
+                    z-index:9999;
+                ">
+                🖼️ Save as Image
+            </button>
+
+            <div id="codeView"
+                style="
+                    background:#0b0f19;
+                    padding:16px;
+                    border-radius:12px;
+                    font-family:monospace;
+                    line-height:2.4;
+                    color:white;
+                    width:fit-content;
+                ">
+                {code_html}
+            </div>
+
+            <script>
+            function saveImage() {{
+                const element = document.getElementById("codeView");
+                html2canvas(element).then(canvas => {{
+                    let link = document.createElement("a");
+                    link.download = "code_view.png";
+                    link.href = canvas.toDataURL();
+                    link.click();
+                }});
+            }}
+            </script>
+
+            </body>
+            </html>
             """
 
-            for line in lines:
-                html += f"<div style='margin-bottom:10px; white-space:nowrap;'>{line}</div>"
-
-            html += "</div>"
-
-            components.html(html, height=500, scrolling=True)
+            components.html(html, height=600, scrolling=True)
 
         else:
             st.dataframe(
@@ -202,7 +247,7 @@ def build_graph(G, node, parent=None, idx=None):
                         build_graph(G, item, node_id, idx)
 
 # =========================
-# AST RENDER WITH SEARCH
+# AST RENDER
 # =========================
 
 def render_ast(ast_data):
@@ -261,13 +306,8 @@ def render_ast(ast_data):
     with open("ast.html", "r", encoding="utf-8") as f:
         html = f.read()
 
-    # =========================
-    # SEARCH + HIGHLIGHT JS
-    # =========================
-
     html += f"""
     <script>
-
     const search = "{search_query}".toLowerCase();
 
     function match(label) {{
@@ -309,7 +349,6 @@ def render_ast(ast_data):
         }}
 
     }}, 700);
-
     </script>
     """
 
@@ -323,4 +362,4 @@ with tab2:
     st.header("🌐 AST Graph (Search Enabled)")
     render_ast(ast)
 
-st.success("🚀 Ready: Tokens + AST Search Enabled")
+st.success("🚀 Ready: Tokens + AST Search + Image Export Enabled")
