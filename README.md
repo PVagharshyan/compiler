@@ -102,6 +102,7 @@ build → compiles full compiler system
 ---
 
 ## Run all test cases
+
 run_all → executes all files in:
 
 run/code_examples_for_testing/
@@ -110,9 +111,7 @@ Behavior:
 - Builds compiler
 - Runs each test file
 - Prints execution logs
-- Removes:
-  - ast.json
-  - tokens.json
+- Cleans generated execution artifacts after completion
 
 ---
 
@@ -125,25 +124,20 @@ Behavior:
 - Builds compiler
 - Runs selected file with verbose mode (-v 2)
 - Saves execution state
-- Launches visualizer automatically
+- Triggers post-execution workflow
 
 ---
 
-# 📊 AST Visualizer System
+# 📊 AST Visualization System
 
-view → launches interactive AST visualizer
-
-Behavior:
-- Requires previous execution state
-- Auto-installs Python dependencies if missing
-- Starts Streamlit server:
-  - visualize.py
+This system provides an interactive visualization layer for compiler output.
 
 Features:
-- Interactive graph exploration
-- Zoom and pan
+- Interactive AST graph exploration
+- Zoom and pan navigation
 - Node-level inspection
-- PyVis network rendering
+- PyVis-based network rendering
+- Streamlit UI interface
 
 ---
 
@@ -154,8 +148,8 @@ clean → resets entire project state
 Removes:
 - build/
 - compiler binary
-- all .json outputs
-- Python venv (.venv)
+- all generated outputs
+- Python virtual environment (.venv)
 - Streamlit cache (.streamlit)
 - Python cache (__pycache__)
 - HTML outputs
@@ -175,7 +169,7 @@ Source Code (.lang)
         ↓
  AST + Tokens (JSON)
         ↓
- Python Visualizer (Streamlit + PyVis)
+ Python Visualization Layer
 
 ---
 
@@ -184,8 +178,8 @@ Source Code (.lang)
 - FILE_PATH is mandatory for `run`
 - `run_all` requires valid test directory:
   run/code_examples_for_testing/
-- Visualizer only works after successful execution
-- Previous run state is stored in `.last_run_state`
+- Execution state is tracked internally via `.last_run_state`
+- Generated artifacts are automatically managed by the system
 
 ---
 
@@ -200,9 +194,6 @@ make run FILE_PATH=run/code_examples_for_testing/test.lang
 run all tests:
 make run_all
 
-launch visualizer:
-make view
-
 clean project:
 make clean
 
@@ -211,9 +202,10 @@ make clean
 # 📌 Summary
 
 This Makefile automates:
-- Full C++ compiler build system
-- Modular compilation of compiler components
-- Automated test execution
-- AST generation
-- Python-based visualization system
+- Full modular C++ compiler build system
+- Lexer / Parser / Interpreter pipeline
+- Automated batch testing system
+- Execution workflow management
+- AST generation pipeline
+- Integrated visualization backend system
 - Clean project lifecycle management
