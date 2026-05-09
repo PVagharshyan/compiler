@@ -24,6 +24,15 @@ PIP      := $(VENV_DIR)/bin/pip
 VISUALIZER := visualize.py
 
 # =========================
+# C GENERATOR
+# =========================
+
+C_GENERATOR := code_generator.py
+
+AST_FILE ?= ast.json
+C_OUTPUT ?= output.c
+
+# =========================
 # SOURCES
 # =========================
 
@@ -185,18 +194,94 @@ view:
 	$(PYTHON) -m streamlit run $(VISUALIZER)
 
 # =========================
+# GENERATE C CODE FROM AST
+# =========================
+
+COMPILE_STATE_FILE := .last_run_compile_state
+
+.PHONY: run_compiler
+run_compiler: build
+	@if [ -z "$(FILE_PATH)" ]; then \
+		echo "ERROR: FILE_PATH is not set."; \
+		echo "Usage: make run FILE_PATH=run/code_examples_for_testing/file.lang"; \
+		exit 1; \
+	fi
+
+	@if [ ! -f "$(FILE_PATH)" ]; then \
+		echo "ERROR: File not found: $(FILE_PATH)"; \
+		exit 1; \
+	fi
+
+	@echo "======================================"
+	@echo "Running single file: $(FILE_PATH)"
+	@echo "======================================"
+
+	./$(TARGET) -v 2 $(FILE_PATH)
+
+	@echo "$(FILE_PATH)" > $(COMPILE_STATE_FILE)
+
+	@$(MAKE) gen_c
+
+.PHONY: gen_c
+gen_c:
+	@if [ ! -f "$(COMPILE_STATE_FILE)" ]; then \
+		echo "ERROR: No execution detected."; \
+		echo "You must run the compiler first using: make run FILE_PATH=..."; \
+		exit 1; \
+	fi
+
+	@rm -f $(COMPILE_STATE_FILE)
+
+	@if [ ! -f "$(AST_FILE)" ]; then \
+		echo "ERROR: AST file not found: $(AST_FILE)"; \
+		exit 1; \
+	fi
+
+	@if [ ! -f "$(C_GENERATOR)" ]; then \
+		echo "ERROR: Generator script not found: $(C_GENERATOR)"; \
+		exit 1; \
+	fi
+
+	@echo "======================================"
+	@echo "Generating C code from AST..."
+	@echo "Input AST : $(AST_FILE)"
+	@echo "Output C  : $(C_OUTPUT)"
+	@echo "======================================"
+
+	python3 $(C_GENERATOR) $(AST_FILE) $(C_OUTPUT)
+
+	@echo "C code generation complete."
+
+.PHONY: gen_execut_file
+gen_execut_file : run_compiler
+	gcc $(C_OUTPUT) -o execut_file
+
+.PHONY: run_execut_file
+run_execut_file : gen_execut_file
+	./execut_file
+
+# =========================
 # CLEAN
 # =========================
 
 .PHONY: clean
 clean:
 	@echo "Cleaning project..."
+
 	rm -rf $(BUILD_DIR)
 	rm -f $(TARGET)
+
 	rm -f *.json
+	rm -f *.c
+	rm -f *.out
+
 	rm -rf __pycache__
 	rm -rf .streamlit
 	rm -rf $(VENV_DIR)
 	rm -rf ./lib
+
 	rm -rf *.html
+
+	rm -rf execut_file
+
 	@echo "Clean complete."
